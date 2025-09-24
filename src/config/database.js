@@ -1,8 +1,18 @@
 const { Pool } = require('pg');
 require('dotenv').config();
-console.log("DATABASE_URL:", process.env.DATABASE_URL);
+
+// Validação básica para não rodar sem envs
+if (!process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_NAME) {
+  throw new Error("⚠️ Variáveis de ambiente do banco não estão configuradas corretamente.");
+}
+
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST || "localhost",
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT || 5432,
+  ssl: process.env.DB_SSL === "true",
 });
 
 module.exports = pool;

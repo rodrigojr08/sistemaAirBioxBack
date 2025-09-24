@@ -78,7 +78,6 @@ async function refreshToken(req, res) {
                 { expiresIn: '18h' }
             );
 
-            // Se quiser, pode gerar também um novo refresh token aqui
             return res.json({ accessToken });
         });
     } catch (err) {

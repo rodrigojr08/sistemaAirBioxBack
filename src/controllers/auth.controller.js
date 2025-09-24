@@ -52,6 +52,7 @@ async function login(req, res) {
         console.error(err);
         res.status(500).json({ error: 'Erro no servidor' });
     }
+    console.log("📥 Login recebido:", req.body);
 }
 
 async function refreshToken(req, res) {

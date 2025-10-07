@@ -1,4 +1,4 @@
-const SistemaModel = require("../models/sistema.model");
+const SistemaModel = require("../models/sistemas.model");
 
 // controllers/sistemas.controller.js
 exports.registerPage = (req, res) => {

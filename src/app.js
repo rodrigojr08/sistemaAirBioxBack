@@ -9,10 +9,13 @@ require('dotenv').config();
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:8100",
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 // Rotas
-app.use('/auth', authRoutes);
+app.use('/auth', authRoutes);   // 🔹 registra rotas de login/register
 app.use('/sistemas', authenticateToken, sistemaRoutes);
 
 app.get('/profile', authenticateToken, (req, res) => {

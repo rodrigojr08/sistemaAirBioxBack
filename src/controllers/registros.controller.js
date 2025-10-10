@@ -8,7 +8,8 @@ exports.salvarRegistros = async (req, res) => {
       return res.status(400).json({ sucesso: false, mensagem: "Payload inválido" });
     }
 
-    const resultado = await Registros.inserir(registros);
+    const userId = req.userId; // vem do middleware authenticateToken
+    const resultado = await Registros.inserir(registros, userId);
 
     res.json(resultado);
   } catch (err) {

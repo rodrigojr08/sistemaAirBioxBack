@@ -5,7 +5,7 @@ const authRoutes = require('./routes/auth.routes');
 const sistemaRoutes = require('./routes/sistemas.routes');
 const registrosRoutes = require('./routes/registros.routes');
 const authenticateToken = require('./middlewares/authenticateToken');
-const { buscarFuncionarios } = require('./controllers/banco-de-horas.controller');
+const bancoDeHorasRoutes = require('./routes/banco-de-horas.routes');
 
 require('dotenv').config();
 
@@ -20,7 +20,7 @@ app.use(cors({
 app.use('/auth', authRoutes);   // 🔹 registra rotas de login/register
 app.use('/sistemas', authenticateToken, sistemaRoutes);
 app.use('/registros', authenticateToken, registrosRoutes);
-app.use('/banco-de-horas/funcionarios', authenticateToken, buscarFuncionarios);
+app.use('/banco-de-horas', authenticateToken, bancoDeHorasRoutes);
 
 app.get('/profile', authenticateToken, (req, res) => {
   res.json({ message: `Usuário autenticado: ${req.userId}` });

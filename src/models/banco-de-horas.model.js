@@ -48,8 +48,6 @@ const BancoDeHoras = {
       const dataInicio = formatar(primeiroDia);
       const dataFim = formatar(ultimoDia);
 
-      console.log("📅 Consultando pontos de", idfunc, "entre", dataInicio, "e", dataFim);
-
       const query = `
         SELECT id, idfunc, nome, data, hora, tipo_ponto, localizacao_nome
         FROM registro_pontos
@@ -64,6 +62,36 @@ const BancoDeHoras = {
     } catch (error) {
       throw error;
     }
+  },
+
+  async inserirHorario({ idfunc, nome, data, hora, tipo_ponto, createdBy }) {
+    const query = `
+      INSERT INTO registro_pontos 
+        (idfunc, nome, data, hora, tipo_ponto, latitude, longitude, localizacao_nome, created_by, created_at)
+      VALUES 
+        ($1, $2, $3, $4, $5, NULL, NULL, 'Airbiox', $6, NOW())
+      RETURNING id;
+    `;
+
+    const values = [idfunc, nome, data, hora, tipo_ponto, createdBy];
+
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  },
+
+  async atualizarHorario({ id, hora, modifiedBy }) {
+    const query = `
+      UPDATE registro_pontos
+      SET hora = $1,
+          modified_by = $2,
+          modified_at = NOW()
+      WHERE id = $3
+      RETURNING id, hora, modified_by, modified_at;
+    `;
+
+    const values = [hora, modifiedBy, id];
+    const result = await pool.query(query, values);
+    return result.rows[0];
   },
 };
 

@@ -5,11 +5,25 @@ const Registros = {
     let inseridos = 0;
 
     for (const r of registros) {
+      // Pega apenas o ano e mês (ex: 2025-09)
+      const anoMes = r.data.slice(0, 7);
+
+      // Verifica se já existe relatório no mesmo mês/ano
+      const buscarRelatorio = await pool.query(
+        `SELECT 1 FROM relatorio_banco_horas WHERE mes_referencia = $1`,
+        [anoMes]
+      );
+
+      if (buscarRelatorio.rowCount > 0) {
+        return { error: 'Registros já inseridos para esse período!' };
+      }
+
+      // Insere ponto (evitando duplicatas)
       const result = await pool.query(
         `INSERT INTO registro_pontos 
-    (idfunc, nome, data, hora, tipo_ponto, latitude, longitude, localizacao_nome, created_by)
-   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-   ON CONFLICT (idfunc, data, hora) DO NOTHING`,
+          (idfunc, nome, data, hora, tipo_ponto, latitude, longitude, localizacao_nome, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (idfunc, data, tipo_ponto) DO NOTHING`,
         [
           r.id,
           r.nome,
@@ -32,10 +46,10 @@ const Registros = {
   async atualizar(idRegistro, novoTipo, novaHora, userId) {
     const result = await pool.query(
       `UPDATE registro_pontos
-       SET tipo_ponto = $1,
-           hora = $2,
-           modified_by = $3,
-           modified_at = now()
+         SET tipo_ponto = $1,
+             hora = $2,
+             modified_by = $3,
+             modified_at = now()
        WHERE id = $4`,
       [novoTipo, novaHora, userId, idRegistro]
     );

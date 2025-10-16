@@ -12,8 +12,12 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: "http://localhost:8100",
-  allowedHeaders: ["Content-Type", "Authorization"]
+  origin: [
+    "http://localhost:8100",
+    //"http://192.168.1.230:8100"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
 // Rotas
@@ -27,6 +31,8 @@ app.get('/profile', authenticateToken, (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Servidor rodando em:`);
+  console.log(`➡ Local: http://localhost:${PORT}`);
+  //console.log(`➡ Rede:  http://192.168.1.230:${PORT}`);
 });

@@ -79,6 +79,11 @@ const BancoDeHoras = {
     return result.rows[0];
   },
 
+   async excluirHorario(id) {
+    const query = `DELETE FROM registro_pontos WHERE id = $1`;
+    return await pool.query(query, [id]);
+  },
+
   async atualizarHorario({ id, hora, modifiedBy }) {
     const query = `
       UPDATE registro_pontos
@@ -93,6 +98,90 @@ const BancoDeHoras = {
     const result = await pool.query(query, values);
     return result.rows[0];
   },
+
+  async buscarRelatorioSalvo(idfunc, mesReferencia) {
+    try {
+      const query = `
+      SELECT id, json_relatorio, saldo_banco_final, horas_pagas_holerite, mes_referencia,
+             created_by, created_at, modified_by, modified_at
+      FROM relatorio_banco_horas
+      WHERE idfunc = $1 AND mes_referencia = $2
+      LIMIT 1;
+    `;
+      const result = await pool.query(query, [idfunc, mesReferencia]);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error("Erro ao buscar relatório salvo:", error);
+      throw error;
+    }
+  },
+
+  async atualizarRelatorio({
+    id,
+    jsonRelatorio,
+    saldoBancoFinal,
+    horasPagasHolerite,
+    modifiedBy,
+  }) {
+    try {
+      const query = `
+      UPDATE relatorio_banco_horas
+      SET json_relatorio = $1,
+          saldo_banco_final = $2,
+          horas_pagas_holerite = $3,
+          modified_by = $4,
+          modified_at = NOW()
+      WHERE id = $5
+      RETURNING id;
+    `;
+
+      const values = [
+        JSON.stringify(jsonRelatorio),
+        saldoBancoFinal,
+        horasPagasHolerite,
+        modifiedBy,
+        id,
+      ];
+
+      const result = await pool.query(query, values);
+      return result.rows[0];
+    } catch (error) {
+      console.error("Erro ao atualizar relatório:", error);
+      throw error;
+    }
+  },
+
+  async salvarRelatorio({
+    idfunc,
+    nomeFuncionario,
+    jsonRelatorio,
+    saldoBancoFinal,
+    horasPagasHolerite,
+    mesReferencia,
+    createdBy,
+  }) {
+    const query = `
+      INSERT INTO relatorio_banco_horas
+        (idfunc, nome_funcionario, json_relatorio, saldo_banco_final, horas_pagas_holerite, mes_referencia, created_by, created_at)
+      VALUES
+        ($1, $2, $3, $4, $5, $6, $7, NOW())
+      RETURNING id;
+    `;
+
+    const values = [
+      idfunc,
+      nomeFuncionario,
+      JSON.stringify(jsonRelatorio),
+      saldoBancoFinal,
+      horasPagasHolerite,
+      mesReferencia,
+      createdBy
+    ];
+
+    const result = await pool.query(query, values);
+    return result.rows[0];
+  },
 };
+
 
 module.exports = BancoDeHoras;

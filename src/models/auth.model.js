@@ -16,6 +16,66 @@ async function createUser(username, email, password) {
     return result.rows[0];
 }
 
+async function buscarUsuariosModel(page = 1, limit = 10){
+    const offset = (page - 1) * limit;
+
+    // busca paginada
+    const query = `
+      SELECT * FROM users 
+      ORDER BY id
+      LIMIT $1 OFFSET $2
+    `;
+    const result = await pool.query(query, [limit, offset]);
+
+    // conta total de registros ativos
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM users
+    `;
+    const countResult = await pool.query(countQuery);
+
+    const total = parseInt(countResult.rows[0].total);
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: result.rows,
+      total,
+      totalPages,
+      page,
+      limit
+    };
+}
+
+async function resetUserPassword(userId, hashedPassword) {
+    const result = await pool.query(
+        'UPDATE users SET hashed_password = $1 WHERE id = $2 RETURNING id, username, email',
+        [hashedPassword, userId]
+    );
+    return result.rows[0];
+}
+
+async function getUserPasswordHash(userId) {
+    const result = await pool.query(
+        'SELECT hashed_password FROM users WHERE id = $1',
+        [userId]
+    );
+
+    if (result.rowCount === 0) {
+        return null;
+    }
+
+    return result.rows[0].hashed_password;
+}
+
+async function updateUserPassword(userId, newHashedPassword) {
+    const result = await pool.query(
+        'UPDATE users SET hashed_password = $1 WHERE id = $2 RETURNING id',
+        [newHashedPassword, userId]
+    );
+
+    return result.rowCount > 0;
+}
+
 async function saveRefreshToken(userId, token, expiresAt) {
     await pool.query(
         'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
@@ -35,5 +95,9 @@ module.exports = {
     findUserByUsername,
     createUser,
     saveRefreshToken,
-    findRefreshToken
+    findRefreshToken,
+    resetUserPassword,
+    getUserPasswordHash,
+    updateUserPassword,
+    buscarUsuariosModel
 };

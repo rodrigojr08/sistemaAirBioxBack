@@ -1,6 +1,15 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { findUserByUsername, createUser, saveRefreshToken, findRefreshToken } = require('../models/auth.model');
+const { 
+  findUserByUsername, 
+  createUser, 
+  saveRefreshToken, 
+  findRefreshToken, 
+  buscarUsuariosModel, 
+  resetUserPassword, 
+  getUserPasswordHash,
+  updateUserPassword
+} = require('../models/auth.model');
 const { JWT_SECRET, JWT_REFRESH_SECRET } = require('../config/jwt');
 
 async function register(req, res) {
@@ -17,6 +26,43 @@ async function register(req, res) {
     } catch (error) {
         console.error('Erro ao registrar usuário:', error);
         res.status(500).json({ error: 'Erro ao registrar usuário' });
+    }
+}
+
+async function buscarUsuarios(req, res) {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const result = await buscarUsuariosModel(page, limit);
+
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("Erro ao buscar usuários:", err);
+    res.status(500).json({ error: "Erro ao buscar usuários" });
+  }
+
+}
+
+async function resetPassword(req, res) {
+    const { id } = req.params;
+    const novaSenha = '123456';
+
+    try {
+        const hashedPassword = await bcrypt.hash(novaSenha, 10);
+        const user = await resetUserPassword(id, hashedPassword);
+
+        if (!user) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+
+        res.status(200).json({
+            message: 'Senha redefinida com sucesso para 123456!',
+            user,
+        });
+    } catch (error) {
+        console.error('Erro ao redefinir senha:', error);
+        res.status(500).json({ error: 'Erro ao redefinir senha' });
     }
 }
 
@@ -54,6 +100,39 @@ async function login(req, res) {
     }
 }
 
+async function changePassword(req, res) {
+    const userId = req.userId; // vem do token
+    const { senhaAtual, novaSenha } = req.body;
+
+    if (!senhaAtual || !novaSenha) {
+        return res.status(400).json({ error: 'Campos obrigatórios ausentes.' });
+    }
+
+    try {
+        const senhaHash = await getUserPasswordHash(userId);
+        if (!senhaHash) {
+            return res.status(404).json({ error: 'Usuário não encontrado.' });
+        }
+
+        const senhaCorreta = await bcrypt.compare(senhaAtual, senhaHash);
+        if (!senhaCorreta) {
+            return res.status(401).json({ error: 'Senha atual incorreta.' });
+        }
+
+        const novaSenhaHash = await bcrypt.hash(novaSenha, 10);
+
+        const atualizado = await updateUserPassword(userId, novaSenhaHash);
+        if (!atualizado) {
+            return res.status(500).json({ error: 'Erro ao atualizar senha.' });
+        }
+
+        res.status(200).json({ message: 'Senha alterada com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao alterar senha:', error);
+        res.status(500).json({ error: 'Erro interno ao alterar senha.' });
+    }
+}
+
 async function refreshToken(req, res) {
     const { token } = req.body;
 
@@ -86,4 +165,4 @@ async function refreshToken(req, res) {
     }
 }
 
-module.exports = { register, login, refreshToken };
+module.exports = { register, login, refreshToken, resetPassword, changePassword, buscarUsuarios };

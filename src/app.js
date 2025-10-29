@@ -30,9 +30,11 @@ app.get('/profile', authenticateToken, (req, res) => {
   res.json({ message: `Usuário autenticado: ${req.userId}` });
 });
 
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Servidor rodando em:`);
+  console.log(`🚀 Servidor disponível em:`);
   console.log(`➡ Local: http://localhost:${PORT}`);
-  //console.log(`➡ Rede:  http://192.168.1.230:${PORT}`);
+  console.log(`➡ Rede:  http://${process.env.SERVER_IP || "192.168.1.110"}:${PORT}`);
 });

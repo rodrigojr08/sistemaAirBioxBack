@@ -48,6 +48,17 @@ const BancoDeHoras = {
       const dataInicio = formatar(primeiroDia);
       const dataFim = formatar(ultimoDia);
 
+      let mesAnterior = mes - 1;
+      let anoAnterior = ano;
+
+      if (mesAnterior === 0) {
+        mesAnterior = 12;
+        anoAnterior -= 1;
+      }
+
+      const mesFormatado = String(mesAnterior).padStart(2, "0");
+      const dataRelatorioPassado = `${anoAnterior}-${mesFormatado}`;
+
       const query = `
         SELECT id, idfunc, nome, data, hora, tipo_ponto, localizacao_nome
         FROM registro_pontos
@@ -56,8 +67,17 @@ const BancoDeHoras = {
         ORDER BY data ASC, hora ASC
       `;
 
+
       const result = await pool.query(query, [idfunc, dataInicio, dataFim]);
-      return result.rows;
+
+      const query2 = `SELECT saldo_banco_final 
+      FROM relatorio_banco_horas 
+      WHERE idfunc = $1 AND mes_referencia = $2`;
+      const horaHMesPassado = await pool.query(query2, [idfunc, dataRelatorioPassado]);
+      return {
+        registros: result.rows,
+        horaHMesPassado: horaHMesPassado.rows[0]?.saldo_banco_final || 0,
+      };
 
     } catch (error) {
       throw error;
@@ -79,7 +99,7 @@ const BancoDeHoras = {
     return result.rows[0];
   },
 
-   async excluirHorario(id) {
+  async excluirHorario(id) {
     const query = `DELETE FROM registro_pontos WHERE id = $1`;
     return await pool.query(query, [id]);
   },
@@ -101,6 +121,19 @@ const BancoDeHoras = {
 
   async buscarRelatorioSalvo(idfunc, mesReferencia) {
     try {
+      const [ano, mes] = mesReferencia.split("-").map(Number);
+
+      let mesAnterior = mes - 1;
+      let anoAnterior = ano;
+
+      if (mesAnterior === 0) {
+        mesAnterior = 12;
+        anoAnterior -= 1;
+      }
+
+      const mesFormatado = String(mesAnterior).padStart(2, "0");
+      const dataRelatorioPassado = `${anoAnterior}-${mesFormatado}`;
+
       const query = `
       SELECT id, json_relatorio, saldo_banco_final, horas_pagas_holerite, mes_referencia,
              created_by, created_at, modified_by, modified_at
@@ -109,7 +142,21 @@ const BancoDeHoras = {
       LIMIT 1;
     `;
       const result = await pool.query(query, [idfunc, mesReferencia]);
+
+      if(result.rowCount > 0){
+        const query2 = `SELECT saldo_banco_final 
+      FROM relatorio_banco_horas 
+      WHERE idfunc = $1 AND mes_referencia = $2`;
+      const horaHMesPassado = await pool.query(query2, [idfunc, dataRelatorioPassado]);
+      return {
+        registros: result.rows,
+        horaHMesPassado: horaHMesPassado.rows[0]?.saldo_banco_final || 0,
+      };
+
+      } else {
+
       return result.rows[0] || null;
+      }
     } catch (error) {
       console.error("Erro ao buscar relatório salvo:", error);
       throw error;

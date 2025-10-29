@@ -143,20 +143,21 @@ const BancoDeHoras = {
     `;
       const result = await pool.query(query, [idfunc, mesReferencia]);
 
-      if(result.rowCount > 0){
-        const query2 = `SELECT saldo_banco_final 
+      // consulta do mês anterior
+      const query2 = `
+      SELECT saldo_banco_final 
       FROM relatorio_banco_horas 
-      WHERE idfunc = $1 AND mes_referencia = $2`;
+      WHERE idfunc = $1 AND mes_referencia = $2
+      LIMIT 1;
+    `;
       const horaHMesPassado = await pool.query(query2, [idfunc, dataRelatorioPassado]);
+
+      // ✅ sempre retorna mesma estrutura, mesmo sem registros
       return {
-        registros: result.rows,
+        registros: result.rows || [],
         horaHMesPassado: horaHMesPassado.rows[0]?.saldo_banco_final || 0,
       };
 
-      } else {
-
-      return result.rows[0] || null;
-      }
     } catch (error) {
       console.error("Erro ao buscar relatório salvo:", error);
       throw error;

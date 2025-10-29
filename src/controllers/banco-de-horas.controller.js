@@ -101,11 +101,32 @@ exports.buscarRelatorioSalvo = async (req, res) => {
     const mesReferencia = `${ano}-${String(mes).padStart(2, "0")}`;
     const relatorio = await BancoDeHoras.buscarRelatorioSalvo(idfunc, mesReferencia);
 
-    if (relatorio) {
-      res.status(200).json({ encontrado: true, relatorio });
-    } else {
-      res.status(200).json({ encontrado: false });
+    console.log("🔍 Resultado do model:", relatorio);
+
+    // 🔧 Aqui forçamos o formato padronizado
+    if (relatorio && relatorio.registros) {
+      return res.status(200).json({
+        encontrado: true,
+        relatorio: {
+          registros: relatorio.registros,
+          horaHMesPassado: relatorio.horaHMesPassado,
+        },
+      });
     }
+
+    // ⚙️ Se veio como objeto direto (sem registros), adaptamos:
+    if (relatorio && !relatorio.registros) {
+      return res.status(200).json({
+        encontrado: true,
+        relatorio: {
+          registros: [relatorio],
+          horaHMesPassado: 0,
+        },
+      });
+    }
+
+    // ❌ Caso não tenha nada:
+    return res.status(200).json({ encontrado: false });
   } catch (err) {
     console.error("Erro ao buscar relatório salvo:", err);
     res.status(500).json({ error: "Erro interno ao buscar relatório salvo." });

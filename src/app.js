@@ -13,11 +13,13 @@ const app = express();
 app.use(express.json());
 app.use(cors({
   origin: [
-    "http://localhost:8100",
-    //"http://192.168.1.230:8100"
+    "http://localhost:8100",         // quando estiver testando local
+    "http://192.168.1.10",           // IP do frontend na sua rede
+    "http://192.168.1.10:8100",      // caso use Ionic/Angular rodando na porta 8100
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
 }));
 
 // Rotas

@@ -8,15 +8,11 @@ const Registros = {
       // Pega apenas o ano e mês (ex: 2025-09)
       const anoMes = r.data.slice(0, 7);
 
-      // Verifica se já existe relatório no mesmo mês/ano
-      const buscarRelatorio = await pool.query(
-        `SELECT 1 FROM relatorio_banco_horas WHERE mes_referencia = $1`,
-        [anoMes]
-      );
-
-      if (buscarRelatorio.rowCount > 0) {
+ /*     if (buscarRelatorio.rowCount > 0) {
+        console.log(buscarRelatorio.rowCount);
         return { error: 'Registros já inseridos para esse período!' };
-      }
+
+      }*/
 
       // Insere ponto (evitando duplicatas)
       const result = await pool.query(

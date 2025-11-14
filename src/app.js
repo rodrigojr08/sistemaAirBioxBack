@@ -39,5 +39,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor disponível em:`);
   console.log(`➡ Local: http://localhost:${PORT}`);
-  console.log(`➡ Rede:  http://${process.env.SERVER_IP || "192.168.1.110"}:${PORT}`);
+  console.log(`➡ Rede:  http://${process.env.SERVER_IP || "192.168.20.30"}:${PORT}`);
 });

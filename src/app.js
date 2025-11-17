@@ -9,24 +9,37 @@ const bancoDeHorasRoutes = require('./routes/banco-de-horas.routes');
 const controleDeHorasRoutes = require('./routes/controle-de-horas.routes');
 require('dotenv').config();
 
-const app = express(); 
+const app = express();
 app.use(express.json());
+
+// === CORS CONFIGURADO CORRETAMENTE PARA CLOUDFLARE TUNNEL ===
 app.use(cors({
   origin: [
-    "http://localhost:8100",         // quando estiver testando local
-    "http://192.168.20.50",          // IP do frontend na sua rede
-    "http://192.168.20.50:8100",     // caso use Ionic/Angular rodando na porta 8100
+    "http://localhost:8100",
+    "http://192.168.20.50",
+    "http://192.168.20.50:8100",
     "http://sistema.airbiox.com",
     "https://sistema.airbiox.com",
-    "https://api.airbiox.com"      
+    "https://api.airbiox.com"
   ],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// Rotas
-app.use('/auth', authRoutes);   // 🔹 registra rotas de login/register
+// === PRE-FLIGHT AUTOMÁTICO (EVITA O ERRO DO "*") ===
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    return res.sendStatus(204);
+  }
+  next();
+});
+
+// === ROTAS ===
+app.use('/auth', authRoutes);
 app.use('/sistemas', authenticateToken, sistemaRoutes);
 app.use('/registros', authenticateToken, registrosRoutes);
 app.use('/banco-de-horas', authenticateToken, bancoDeHorasRoutes);
@@ -36,11 +49,10 @@ app.get('/profile', authenticateToken, (req, res) => {
   res.json({ message: `Usuário autenticado: ${req.userId}` });
 });
 
-
-
+// === INICIAR SERVIDOR ===
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Servidor disponível em:`);
+  console.log("Servidor disponível em:");
   console.log(`➡ Local: http://localhost:${PORT}`);
   console.log(`➡ Rede:  http://${process.env.SERVER_IP || "192.168.20.30"}:${PORT}`);
 });

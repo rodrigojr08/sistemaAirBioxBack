@@ -16,7 +16,8 @@ app.use(cors({
     "http://localhost:8100",         // quando estiver testando local
     "http://192.168.20.50",          // IP do frontend na sua rede
     "http://192.168.20.50:8100",     // caso use Ionic/Angular rodando na porta 8100
-    "http://sistema.airbiox.com"      
+    "http://sistema.airbiox.com",
+    "https://sistema.airbiox.com"      
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],

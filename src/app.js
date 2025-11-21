@@ -9,6 +9,7 @@ const registrosRoutes = require("./routes/registros.routes");
 const authenticateToken = require("./middlewares/authenticateToken");
 const bancoDeHorasRoutes = require("./routes/banco-de-horas.routes");
 const controleDeHorasRoutes = require("./routes/controle-de-horas.routes");
+const estoqueRoutes = require("./routes/estoque.routes");
 
 const app = express();
 app.use(express.json());
@@ -46,6 +47,7 @@ app.use("/sistemas", authenticateToken, sistemaRoutes);
 app.use("/registros", authenticateToken, registrosRoutes);
 app.use("/banco-de-horas", authenticateToken, bancoDeHorasRoutes);
 app.use("/controle-de-horas", authenticateToken, controleDeHorasRoutes);
+app.use("/estoque", authenticateToken, estoqueRoutes);
 
 // === TESTE DE TOKEN (opcional) ===
 app.get("/profile", authenticateToken, (req, res) => {

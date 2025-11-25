@@ -10,6 +10,8 @@ const authenticateToken = require("./middlewares/authenticateToken");
 const bancoDeHorasRoutes = require("./routes/banco-de-horas.routes");
 const controleDeHorasRoutes = require("./routes/controle-de-horas.routes");
 const estoqueRoutes = require("./routes/estoque.routes");
+const nfeRoutes = require("./routes/nfe.routes");
+const produtosRoutes = require("./routes/produtos.routes");
 
 const app = express();
 app.use(express.json());
@@ -48,7 +50,8 @@ app.use("/registros", authenticateToken, registrosRoutes);
 app.use("/banco-de-horas", authenticateToken, bancoDeHorasRoutes);
 app.use("/controle-de-horas", authenticateToken, controleDeHorasRoutes);
 app.use("/estoque", authenticateToken, estoqueRoutes);
-
+app.use("/importar-xml", authenticateToken, nfeRoutes);
+app.use("/produtos", authenticateToken, produtosRoutes);
 // === TESTE DE TOKEN (opcional) ===
 app.get("/profile", authenticateToken, (req, res) => {
   res.json({ message: `Usuário autenticado: ${req.userId}` });

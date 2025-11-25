@@ -2,12 +2,12 @@ const pool = require("../config/database2");
 
 const EstoqueMovModel = {
 
-    registrarMovimentacao: async (id_produto, tipo, quantidade, origemTipo, origemId) => {
+    registrarMovimentacao: async (id_produto, tipo, quantidade, origem, id_item_nfe) => {
         return await pool.query(`
-            INSERT INTO estoque_movimentacao 
-            (id_produto, tipo, quantidade, tipo_origem, id_origem)
-            VALUES ($1, $2, $3, $4, $5)
-        `, [id_produto, tipo, quantidade, origemTipo, origemId]);
+        INSERT INTO estoque_movimentacao 
+        (id_produto, id_item_nfe, tipo, quantidade, data_movimento, origem)
+        VALUES ($1, $2, $3, $4, NOW(), $5)
+    `, [id_produto, id_item_nfe, tipo, quantidade, origem]);
     },
 
     atualizarEstoqueEntrada: async (id_produto, quantidade) => {

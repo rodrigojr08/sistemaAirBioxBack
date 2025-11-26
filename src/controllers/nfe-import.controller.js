@@ -255,7 +255,6 @@ exports.importarXML = async (req, res) => {
                 signature_value: sig.SignatureValue || null,
                 x509_certificate: sig.KeyInfo?.X509Data?.X509Certificate || null
             };
-            console.log('dados: ', assinatura)
             await NFeImportModel.inserirAssinatura(idNFe, assinatura);
         }
 
@@ -355,12 +354,18 @@ exports.importarXML = async (req, res) => {
             );
         }
 
+
+
         await pool.query("COMMIT");
 
         return res.json({
             sucesso: true,
             mensagem: "NF-e importada com sucesso!",
-            idNFe
+            idNFe,
+            fornecedor: emit.xNome,
+            valor_total: icmsTot.vProd,
+            duplicatas: nf.cobr?.dup || [],
+            numero_nf: ide.nNF
         });
 
     } catch (err) {

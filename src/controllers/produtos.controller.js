@@ -9,6 +9,60 @@ exports.listar = async (req, res) => {
     }
 };
 
+exports.buscarNCM = async (req, res) => {
+    try {
+        const result = await Produto.buscarNCMs();
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ erro: error.message });
+    }
+}
+
+exports.buscarNCMCodigo = async (req, res) => {
+    try {
+        const result = await Produto.buscarNCMCodigo(codigo);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ erro: error.message });
+    }
+}
+
+exports.buscarFabricantes = async (req, res) => {
+    try {
+        const result = await Produto.buscarFabricantes();
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ erro: error.message });
+    }
+}
+
+exports.buscarUnidades = async (req, res) => {
+    try {
+        const result = await Produto.buscarUidades();
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ erro: error.message });
+    }
+}
+
+exports.buscarSetores = async (req, res) => {
+    try {
+        const result = await Produto.buscarSetores();
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ erro: error.message });
+    }
+}
+
+exports.buscarGrupos = async (req, res) => {
+    try {
+        const result = await Produto.buscarGrupos();
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ erro: error.message });
+    }
+}
+
 exports.buscar = async (req, res) => {
     try {
         const id = req.params.id;

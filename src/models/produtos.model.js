@@ -14,6 +14,30 @@ module.exports = {
         `, [id]);
     },
 
+    buscarNCMs: async () => {
+        return await pool.query(`SELECT * from ncm_lista ORDER BY descricao`);
+    },
+
+    buscarNCMCodigo: async (codigo) => {
+        return await pool.query('Select * from ncm_lista Where codigo = $1', [codigo]);
+    },
+
+    buscarFabricantes: async () => {
+        return await pool.query('SELECT * from marcas_produto where ativo = true');
+    },
+
+    buscarUidades: async () => {
+        return await pool.query('SELECT * from unidades_comerciais');
+    },
+
+    buscarSetores: async () => {
+        return await pool.query('SELECT * from setor_produto');
+    },
+
+    buscarGrupos: async () => {
+        return await pool.query('SELECT * from grupo_produto');
+    },
+
     criar: async (dados) => {
         const campos = Object.keys(dados);
         const valores = Object.values(dados);

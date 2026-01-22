@@ -1,9 +1,8 @@
 // models/sistema.model.js
 const pool = require("../config/database"); // sua conexão com o postgres
 
-/**
- * Busca todos os sistemas pai que o usuário tem permissão
- */
+
+
 async function getSistemasPaiByUser(userId) {
   const query = `
     SELECT DISTINCT s.*

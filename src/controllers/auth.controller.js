@@ -1,14 +1,14 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { 
-  findUserByUsername, 
-  createUser, 
-  saveRefreshToken, 
-  findRefreshToken, 
-  buscarUsuariosModel, 
-  resetUserPassword, 
-  getUserPasswordHash,
-  updateUserPassword
+const {
+    findUserByUsername,
+    createUser,
+    saveRefreshToken,
+    findRefreshToken,
+    buscarUsuariosModel,
+    resetUserPassword,
+    getUserPasswordHash,
+    updateUserPassword
 } = require('../models/auth.model');
 const { JWT_SECRET, JWT_REFRESH_SECRET } = require('../config/jwt');
 
@@ -30,17 +30,17 @@ async function register(req, res) {
 }
 
 async function buscarUsuarios(req, res) {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
 
-    const result = await buscarUsuariosModel(page, limit);
+        const result = await buscarUsuariosModel(page, limit);
 
-    res.status(200).json(result);
-  } catch (err) {
-    console.error("Erro ao buscar usuários:", err);
-    res.status(500).json({ error: "Erro ao buscar usuários" });
-  }
+        res.status(200).json(result);
+    } catch (err) {
+        console.error("Erro ao buscar usuários:", err);
+        res.status(500).json({ error: "Erro ao buscar usuários" });
+    }
 
 }
 
@@ -84,13 +84,21 @@ async function login(req, res) {
             return res.status(401).json({ error: 'Usuário ou senha inválidos' });
         }
 
-        const accessToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '18h' });
-        const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+        const accessToken = jwt.sign(
+            { userId: user.id },
+            JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+        const refreshToken = jwt.sign(
+            { userId: user.id },
+            JWT_REFRESH_SECRET,
+            { expiresIn: '30d' }
+        );
 
         await saveRefreshToken(
             user.id,
             refreshToken,
-            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 dias
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         );
 
         res.json({ accessToken, refreshToken });
@@ -134,35 +142,54 @@ async function changePassword(req, res) {
 }
 
 async function refreshToken(req, res) {
-    const { token } = req.body;
+  const { refreshToken } = req.body;
 
-    if (!token) {
-        return res.status(401).json({ error: 'Token é obrigatório' });
+  if (!refreshToken) {
+    return res.status(401).json({ error: "refreshToken é obrigatório" });
+  }
+
+  try {
+    const dbToken = await findRefreshToken(refreshToken);
+
+    if (!dbToken) {
+      return res.status(403).json({ error: "Token inválido ou expirado" });
     }
 
-    try {
-        const dbToken = await findRefreshToken(token);
-        if (!dbToken) {
-            return res.status(403).json({ error: 'Token inválido' });
-        }
+    jwt.verify(refreshToken, JWT_REFRESH_SECRET, async (err, payload) => {
+      if (err) {
+        return res.status(403).json({ error: "Token expirado" });
+      }
 
-        jwt.verify(token, JWT_REFRESH_SECRET, (err, payload) => {
-            if (err) {
-                return res.status(403).json({ error: 'Token expirado' });
-            }
+      // 🔁 ROTACIONA TOKEN
+      await revokeRefreshToken(refreshToken);
 
-            const accessToken = jwt.sign(
-                { userId: payload.userId },
-                JWT_SECRET,
-                { expiresIn: '18h' }
-            );
+      const newAccessToken = jwt.sign(
+        { userId: payload.userId },
+        JWT_SECRET,
+        { expiresIn: "1h" }
+      );
 
-            return res.json({ accessToken });
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Erro no servidor' });
-    }
+      const newRefreshToken = jwt.sign(
+        { userId: payload.userId },
+        JWT_REFRESH_SECRET,
+        { expiresIn: "30d" }
+      );
+
+      await saveRefreshToken(
+        payload.userId,
+        newRefreshToken,
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      );
+
+      return res.json({
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erro no servidor" });
+  }
 }
 
 module.exports = { register, login, refreshToken, resetPassword, changePassword, buscarUsuarios };

@@ -14,6 +14,7 @@ const nfeRoutes = require("./routes/nfe.routes");
 const produtosRoutes = require("./routes/produtos.routes");
 const contasPagarRoutes = require("./routes/contas-pagar.routes");
 const nfeServicoRoutes = require("./routes/nfe-servico.routes");
+const mapaRoutes = require("./routes/mapa-routes");
 
 const app = express();
 app.use(express.json());
@@ -56,6 +57,7 @@ app.use("/importar-xml", authenticateToken, nfeRoutes);
 app.use("/produtos", authenticateToken, produtosRoutes);
 app.use("/contas-pagar", authenticateToken, contasPagarRoutes);
 app.use("/nfe-servico", authenticateToken, nfeServicoRoutes);
+app.use("/mapa", authenticateToken, mapaRoutes);
 
 // === TESTE DE TOKEN (opcional) ===
 app.get("/profile", authenticateToken, (req, res) => {

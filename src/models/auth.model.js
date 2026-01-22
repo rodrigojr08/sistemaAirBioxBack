@@ -84,11 +84,26 @@ async function saveRefreshToken(userId, token, expiresAt) {
 }
 
 async function findRefreshToken(token) {
-    const result = await pool.query(
-        'SELECT * FROM refresh_tokens WHERE token = $1',
-        [token]
-    );
-    return result.rows[0];
+  const result = await pool.query(
+    `
+    SELECT *
+    FROM refresh_tokens
+    WHERE token = $1
+      AND expires_at > NOW()
+      AND revoked = false
+    LIMIT 1
+    `,
+    [token]
+  );
+
+  return result.rows[0];
+}
+
+async function revokeRefreshToken(token) {
+  await pool.query(
+    'UPDATE refresh_tokens SET revoked = true WHERE token = $1',
+    [token]
+  );
 }
 
 module.exports = {

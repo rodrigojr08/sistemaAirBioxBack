@@ -114,5 +114,6 @@ module.exports = {
     resetUserPassword,
     getUserPasswordHash,
     updateUserPassword,
-    buscarUsuariosModel
+    buscarUsuariosModel,
+    revokeRefreshToken
 };

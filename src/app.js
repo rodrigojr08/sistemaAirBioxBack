@@ -20,21 +20,33 @@ const app = express();
 app.use(express.json());
 
 // === CORS CONFIGURADO CORRETAMENTE PARA CLOUDFLARE ===
-app.use(
-  cors({
-    origin: [
-      "http://localhost:8100",
-      "http://192.168.20.50",
-      "http://192.168.20.50:8100",
-      "http://sistema.airbiox.com",
-      "https://sistema.airbiox.com",
-      "https://api.airbiox.com",
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+app.use((req, res, next) => {
+  console.log("Origin:", req.headers.origin);
+  console.log("User-Agent:", req.headers["user-agent"]);
+  next();
+});
+
+const corsOptions = {
+  origin: [
+    "http://localhost:8100",
+    "http://localhost",
+    "http://192.168.20.50",
+    "http://192.168.20.50:8100",
+    "http://sistema.airbiox.com",
+    "https://sistema.airbiox.com",
+    "https://api.airbiox.com",
+    "capacitor://localhost",
+    "ionic://localhost",
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-APP-KEY"],
+  exposedHeaders: ["Authorization"],
+  credentials: true, // coloque true SOMENTE se usar cookies
+};
+
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions)); // ✅ aqui é o fix
+
 
 // === RATE LIMIT APENAS PARA O LOGIN ===
 const loginLimiter = rateLimit({

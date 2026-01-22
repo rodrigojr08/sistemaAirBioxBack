@@ -8,7 +8,8 @@ const {
     buscarUsuariosModel,
     resetUserPassword,
     getUserPasswordHash,
-    updateUserPassword
+    updateUserPassword,
+    revokeRefreshToken
 } = require('../models/auth.model');
 const { JWT_SECRET, JWT_REFRESH_SECRET } = require('../config/jwt');
 
@@ -142,54 +143,56 @@ async function changePassword(req, res) {
 }
 
 async function refreshToken(req, res) {
-  const { refreshToken } = req.body;
+    const { refreshToken } = req.body;
 
-  if (!refreshToken) {
-    return res.status(401).json({ error: "refreshToken é obrigatório" });
-  }
-
-  try {
-    const dbToken = await findRefreshToken(refreshToken);
-
-    if (!dbToken) {
-      return res.status(403).json({ error: "Token inválido ou expirado" });
+    if (!refreshToken) {
+        return res.status(401).json({ error: "refreshToken é obrigatório" });
     }
 
-    jwt.verify(refreshToken, JWT_REFRESH_SECRET, async (err, payload) => {
-      if (err) {
-        return res.status(403).json({ error: "Token expirado" });
-      }
+    try {
+        const dbToken = await findRefreshToken(refreshToken);
 
-      // 🔁 ROTACIONA TOKEN
-      await revokeRefreshToken(refreshToken);
+        if (!dbToken) {
+            return res.status(403).json({ error: "Token inválido ou expirado" });
+        }
 
-      const newAccessToken = jwt.sign(
-        { userId: payload.userId },
-        JWT_SECRET,
-        { expiresIn: "1h" }
-      );
+        jwt.verify(refreshToken, JWT_REFRESH_SECRET, async (err, payload) => {
+            if (err) {
+                console.log("JWT VERIFY ERROR:", err.name, err.message);
 
-      const newRefreshToken = jwt.sign(
-        { userId: payload.userId },
-        JWT_REFRESH_SECRET,
-        { expiresIn: "30d" }
-      );
+                return res.status(403).json({ error: "Token expirado" });
+            }
 
-      await saveRefreshToken(
-        payload.userId,
-        newRefreshToken,
-        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      );
+            // 🔁 ROTACIONA TOKEN
+            await revokeRefreshToken(refreshToken);
 
-      return res.json({
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken
-      });
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Erro no servidor" });
-  }
+            const newAccessToken = jwt.sign(
+                { userId: payload.userId },
+                JWT_SECRET,
+                { expiresIn: "1h" }
+            );
+
+            const newRefreshToken = jwt.sign(
+                { userId: payload.userId },
+                JWT_REFRESH_SECRET,
+                { expiresIn: "30d" }
+            );
+
+            await saveRefreshToken(
+                payload.userId,
+                newRefreshToken,
+                new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            );
+
+            return res.json({
+                accessToken: newAccessToken,
+                refreshToken: newRefreshToken
+            });
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Erro no servidor" });
+    }
 }
 
 module.exports = { register, login, refreshToken, resetPassword, changePassword, buscarUsuarios };

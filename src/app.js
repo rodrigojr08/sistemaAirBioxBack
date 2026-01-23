@@ -21,8 +21,11 @@ app.use(express.json());
 
 // === CORS CONFIGURADO CORRETAMENTE PARA CLOUDFLARE ===
 app.use((req, res, next) => {
+  console.log("====================================");
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   console.log("Origin:", req.headers.origin);
-  console.log("User-Agent:", req.headers["user-agent"]);
+  console.log("Host:", req.headers.host);
+  console.log("Auth header:", req.headers.authorization ? "SIM" : "NÃO");
   next();
 });
 
@@ -30,13 +33,13 @@ const corsOptions = {
   origin: [
     "http://localhost:8100",
     "http://localhost",
-    "http://192.168.20.50",
-    "http://192.168.20.50:8100",
-    "http://sistema.airbiox.com",
-    "https://sistema.airbiox.com",
-    "https://api.airbiox.com",
+    "https://localhost",
     "capacitor://localhost",
     "ionic://localhost",
+    "http://192.168.20.50",
+    "http://192.168.20.50:8100",
+    "https://sistema.airbiox.com",
+    "https://api.airbiox.com",
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-APP-KEY"],

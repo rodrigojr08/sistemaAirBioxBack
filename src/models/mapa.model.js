@@ -24,17 +24,19 @@ const MapaModel = {
     },
 
     buscarMapas: async () => {
-        const result = await pool.query(`SELECT * From mapa.registro where status = 'editavel' order by data`);
+        const result = await pool.query(`SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, 
+            created_by, modified_by, atualizado_em, status  From mapa.registro where status = 'editavel' order by data`);
         return result.rows;
     },
 
     buscarMapasFinalizados: async () => {
-        const result = await pool.query(`SELECT * From mapa.registro where status = 'finalizado' order by data`);
+        const result = await pool.query(`SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, created_by, 
+            modified_by, atualizado_em, status From mapa.registro where status = 'finalizado' order by data`);
         return result.rows;
     },
 
     buscarMapasFinalizadosFiltro: async (data, cidade) => {
-        let sql = `SELECT * FROM mapa.registro WHERE status = 'finalizado' AND data = $1`;
+        let sql = `SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, created_by, modified_by, atualizado_em, status FROM mapa.registro WHERE status = 'finalizado' AND data = $1`;
         const params = [data];
         if (cidade != null && cidade != '' && cidade != 'null') {
             params.push(`%${cidade}%`);
@@ -45,7 +47,8 @@ const MapaModel = {
     },
 
     buscarMapasFiltro: async (data, cidade) => {
-        let sql = `SELECT * FROM mapa.registro WHERE status = 'editavel' AND data = $1`;
+        let sql = `SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, 
+        created_by, modified_by, atualizado_em, status FROM mapa.registro WHERE status = 'editavel' AND data = $1`;
         const params = [data];
         if (cidade != null && cidade != '' && cidade != 'null') {
             params.push(`%${cidade}%`);
@@ -56,7 +59,9 @@ const MapaModel = {
     },
 
     buscarMapa: async (id) => {
-        const result = await pool.query('SELECT * from mapa.registro where id = $1', [id]);
+        let sql = `SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, 
+        created_by, modified_by, atualizado_em, status from mapa.registro where id = $1`;
+        const result = await pool.query(sql, [id]);
         return result.rows[0];
     },
 

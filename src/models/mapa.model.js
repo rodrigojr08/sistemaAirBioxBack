@@ -1,15 +1,15 @@
 const pool = require("../config/database2");
 
 const MapaModel = {
-    inserirMapa: async (data, cidade, dados, createdBy) => {
+    inserirMapa: async (data, cidade, dados, createdBy, placa, motorista) => {
         const dadosJson = JSON.stringify(dados);
 
         const sql = `
-    INSERT INTO mapa.registro (data, cidade, dados, created_by, status)
-    VALUES ($1::date, $2::varchar, $3::jsonb, $4::varchar, 'editavel')
+    INSERT INTO mapa.registro (data, cidade, dados, created_by, status, placa, motorista)
+    VALUES ($1::date, $2::varchar, $3::jsonb, $4::varchar, 'editavel', $5::varchar, $6::varchar)
     RETURNING id
   `;
-        const result = await pool.query(sql, [data, cidade, dadosJson, String(createdBy)]);
+        const result = await pool.query(sql, [data, cidade, dadosJson, String(createdBy), placa, motorista]);
         return result.rows[0].id;
     },
     buscarGases: async () => {
@@ -25,18 +25,18 @@ const MapaModel = {
 
     buscarMapas: async () => {
         const result = await pool.query(`SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, 
-            created_by, modified_by, atualizado_em, status  From mapa.registro where status = 'editavel' order by data`);
+            created_by, modified_by, atualizado_em, status, placa, motorista  From mapa.registro where status = 'editavel' order by data`);
         return result.rows;
     },
 
     buscarMapasFinalizados: async () => {
         const result = await pool.query(`SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, created_by, 
-            modified_by, atualizado_em, status From mapa.registro where status = 'finalizado' order by data`);
+            modified_by, atualizado_em, status, placa, motorista From mapa.registro where status = 'finalizado' order by data`);
         return result.rows;
     },
 
     buscarMapasFinalizadosFiltro: async (data, cidade) => {
-        let sql = `SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, created_by, modified_by, atualizado_em, status FROM mapa.registro WHERE status = 'finalizado' AND data = $1`;
+        let sql = `SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, created_by, modified_by, atualizado_em, status, placa, motorista FROM mapa.registro WHERE status = 'finalizado' AND data = $1`;
         const params = [data];
         if (cidade != null && cidade != '' && cidade != 'null') {
             params.push(`%${cidade}%`);
@@ -48,7 +48,7 @@ const MapaModel = {
 
     buscarMapasFiltro: async (data, cidade) => {
         let sql = `SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, 
-        created_by, modified_by, atualizado_em, status FROM mapa.registro WHERE status = 'editavel' AND data = $1`;
+        created_by, modified_by, atualizado_em, status, placa, motorista FROM mapa.registro WHERE status = 'editavel' AND data = $1`;
         const params = [data];
         if (cidade != null && cidade != '' && cidade != 'null') {
             params.push(`%${cidade}%`);
@@ -60,21 +60,23 @@ const MapaModel = {
 
     buscarMapa: async (id) => {
         let sql = `SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, 
-        created_by, modified_by, atualizado_em, status from mapa.registro where id = $1`;
+        created_by, modified_by, atualizado_em, status, placa, motorista from mapa.registro where id = $1`;
         const result = await pool.query(sql, [id]);
         return result.rows[0];
     },
 
-    atualizarMapa: async (id, data, cidade, dados, modifiedBy) => {
+    atualizarMapa: async (id, data, cidade, dados, modifiedBy, placa, motorista) => {
         const dadosJson = JSON.stringify(dados);
 
-        const sql = `UPDATE mapa.registro SET data = $1,cidade = $2,dados = $3, atualizado_em = NOW(), modified_by = $5 WHERE id = $4 RETURNING id`;
+        const sql = `UPDATE mapa.registro SET data = $1,cidade = $2,dados = $3, atualizado_em = NOW(), modified_by = $5, placa = $6, motorista = $7 WHERE id = $4 RETURNING id`;
         const result = await pool.query(sql, [
             data,
             cidade,
             dadosJson,
             id,
-            modifiedBy
+            modifiedBy,
+            placa,
+            motorista
         ]);
 
         return result.rows[0];

@@ -2,15 +2,15 @@ const MapaModel = require("../models/mapa.model")
 
 exports.inserirMapa = async (req, res) => {
   try {
-    const { data, cidade, dados } = req.body;
+    const { data, cidade, dados, placa, motorista } = req.body;
 
-    if (!data || !cidade || !dados) {
+    if (!data || !cidade || !dados || !placa || !motorista) {
       return res.status(400).json({ error: "Parâmetros obrigatórios ausentes." });
     }
 
     const createdBy = req.userId;
 
-    const id = await MapaModel.inserirMapa(data, cidade, dados, createdBy);
+    const id = await MapaModel.inserirMapa(data, cidade, dados, createdBy, placa, motorista);
 
     return res.status(201).json({
       sucesso: true,
@@ -134,9 +134,9 @@ exports.inserirGas = async (req, res) => {
 exports.atualizarMapa = async (req, res) => {
   try {
     const { id } = req.params;
-    const { data, cidade, dados } = req.body;
+    const { data, cidade, dados, placa, motorista } = req.body;
 
-    if (!id || !data || !cidade || !dados) {
+    if (!id || !data || !cidade || !dados || !placa || !motorista) {
       return res.status(400).json({ error: "Parâmetros obrigatórios ausentes." });
     }
 
@@ -149,7 +149,9 @@ exports.atualizarMapa = async (req, res) => {
       data,
       cidade,
       dados,
-      modifiedBy
+      modifiedBy,
+      placa,
+      motorista
     );
 
     return res.status(200).json({

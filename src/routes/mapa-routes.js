@@ -6,6 +6,7 @@ const authenticateToken = require("../middlewares/authenticateToken");
 // ✅ rota correta
 router.post("/inserir-mapa", authenticateToken, mapaController.inserirMapa);
 router.get("/gases", authenticateToken, mapaController.buscarGases);
+router.get("/buscar-gas/:id", authenticateToken, mapaController.buscarGas);
 router.post("/inserir-gas", authenticateToken, mapaController.inserirGas);
 router.get("/buscar-mapas-finalizados", authenticateToken, mapaController.buscarMapasFinalizados);
 router.get("/buscar-mapas-finalizados-filtro", authenticateToken, mapaController.buscarMapasFinalizadosFiltro);

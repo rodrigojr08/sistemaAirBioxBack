@@ -2,15 +2,15 @@ const MapaModel = require("../models/mapa.model")
 
 exports.inserirMapa = async (req, res) => {
   try {
-    const { data, cidade, dados, placa, motorista } = req.body;
+    const { data, cidade, dados, placa, motorista, quantidade_total } = req.body;
 
-    if (!data || !cidade || !dados || !placa || !motorista) {
+    if (!data || !cidade || !dados || !placa || !motorista || !quantidade_total) {
       return res.status(400).json({ error: "Parâmetros obrigatórios ausentes." });
     }
 
     const createdBy = req.userId;
 
-    const id = await MapaModel.inserirMapa(data, cidade, dados, createdBy, placa, motorista);
+    const id = await MapaModel.inserirMapa(data, cidade, dados, createdBy, placa, motorista, quantidade_total);
 
     return res.status(201).json({
       sucesso: true,
@@ -22,6 +22,27 @@ exports.inserirMapa = async (req, res) => {
     return res.status(500).json({ error: error.message || "Erro interno ao inserir mapa." });
   }
 };
+
+exports.buscarGas = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "Parâmetro 'id' é obrigatório." });
+    }
+
+    const result = await MapaModel.buscarGas(id);
+
+    if (!result) {
+      return res.status(404).json({ error: "Gás não encontrado." });
+    }
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Erro ao buscar gás:", error);
+    return res.status(500).json({ error: "Erro ao buscar gás." });
+  }
+}
 
 exports.buscarGases = async (req, res) => {
   try {
@@ -116,11 +137,12 @@ exports.inserirGas = async (req, res) => {
     const result = await MapaModel.inserirGas(
       tipo, tamanho, unidade_medida, tipo_cilindro
     );
-
+    console.log('resultado: ', result);
     res.status(201).json({
       sucesso: true,
       mensagem: "Gás inserido com sucesso!",
       id: result.id,
+      
     });
   } catch (error) {
     console.error("Erro ao inserir gás:", error);
@@ -134,9 +156,9 @@ exports.inserirGas = async (req, res) => {
 exports.atualizarMapa = async (req, res) => {
   try {
     const { id } = req.params;
-    const { data, cidade, dados, placa, motorista } = req.body;
+    const { data, cidade, dados, placa, motorista, quantidade_total } = req.body;
 
-    if (!id || !data || !cidade || !dados || !placa || !motorista) {
+    if (!id || !data || !cidade || !dados || !placa || !motorista || !quantidade_total) {
       return res.status(400).json({ error: "Parâmetros obrigatórios ausentes." });
     }
 
@@ -151,7 +173,8 @@ exports.atualizarMapa = async (req, res) => {
       dados,
       modifiedBy,
       placa,
-      motorista
+      motorista,
+      quantidade_total
     );
 
     return res.status(200).json({

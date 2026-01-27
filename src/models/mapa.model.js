@@ -13,11 +13,11 @@ const MapaModel = {
         return result.rows[0].id;
     },
     buscarGases: async () => {
-        const result = await pool.query(`SELECT * From mapa.gases`);
+        const result = await pool.query(`SELECT * From mapa.gases order by tipo`);
         return result.rows;
     },
     buscarGas: async (id) => {
-        const result = await pool.query(`SELECT * From mapa.gases where id = $1`, [id]);
+        const result = await pool.query(`SELECT * From mapa.gases where id = $1 order by tipo`, [id]);
         return result.rows[0];
     },
 
@@ -75,18 +75,19 @@ const MapaModel = {
 
     buscarMapas: async () => {
         const result = await pool.query(`SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, 
-            created_by, modified_by, atualizado_em, status, placa, motorista, quantidade_total  From mapa.registro where status = 'editavel' order by data`);
+            created_by, modified_by, atualizado_em, status, placa, motorista, quantidade_total  
+            From mapa.registro where status = 'editavel' or status = 'finalizado' order by data`);
         return result.rows;
     },
 
-    buscarMapasFinalizados: async () => {
+    buscarMapasConcluidos: async () => {
         const result = await pool.query(`SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, created_by, 
-            modified_by, atualizado_em, status, placa, motorista, quantidade_total From mapa.registro where status = 'finalizado' order by data`);
+            modified_by, atualizado_em, status, placa, motorista, quantidade_total From mapa.registro where status = 'concluido' order by data`);
         return result.rows;
     },
 
-    buscarMapasFinalizadosFiltro: async (data, cidade) => {
-        let sql = `SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, created_by, modified_by, atualizado_em, status, placa, motorista, quantidade_total FROM mapa.registro WHERE status = 'finalizado' AND data = $1`;
+    buscarMapasConcluidosFiltro: async (data, cidade) => {
+        let sql = `SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, created_by, modified_by, atualizado_em, status, placa, motorista, quantidade_total FROM mapa.registro WHERE status = 'concluido' AND data = $1`;
         const params = [data];
         if (cidade != null && cidade != '' && cidade != 'null') {
             params.push(`%${cidade}%`);
@@ -98,7 +99,7 @@ const MapaModel = {
 
     buscarMapasFiltro: async (data, cidade) => {
         let sql = `SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, 
-        created_by, modified_by, atualizado_em, status, placa, motorista, quantidade_total FROM mapa.registro WHERE status = 'editavel' AND data = $1`;
+        created_by, modified_by, atualizado_em, status, placa, motorista, quantidade_total FROM mapa.registro WHERE status = 'editavel' or status = 'finalizado' AND data = $1`;
         const params = [data];
         if (cidade != null && cidade != '' && cidade != 'null') {
             params.push(`%${cidade}%`);
@@ -135,6 +136,16 @@ const MapaModel = {
 
     finalizarMapa: async (id, modifiedBy) => {
         const sql = `UPDATE mapa.registro SET atualizado_em = NOW(), status = 'finalizado', modified_by = $2 WHERE id = $1 RETURNING id`;
+        const result = await pool.query(sql, [
+            id, modifiedBy
+        ]);
+
+        return result.rows[0];
+
+    },
+
+    concluirMapa: async (id, modifiedBy) => {
+        const sql = `UPDATE mapa.registro SET atualizado_em = NOW(), status = 'concluido', modified_by = $2 WHERE id = $1 RETURNING id`;
         const result = await pool.query(sql, [
             id, modifiedBy
         ]);

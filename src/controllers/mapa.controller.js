@@ -76,10 +76,10 @@ exports.buscarMapa = async (req, res) => {
   }
 };
 
-exports.buscarMapasFinalizados = async (req, res) => {
+exports.buscarMapasConcluidos = async (req, res) => {
   try {
     const { id_mapa } = req.params;
-    const result = await MapaModel.buscarMapasFinalizados(id_mapa);
+    const result = await MapaModel.buscarMapasConcluidos(id_mapa);
     return res.status(200).json(result);
   } catch (err) {
     console.error("Erro ao buscar mapa:", err);
@@ -107,7 +107,7 @@ exports.buscarMapasFiltro = async (req, res) => {
 };
 
 
-exports.buscarMapasFinalizadosFiltro = async (req, res) => {
+exports.buscarMapasConcluidosFiltro = async (req, res) => {
   try {
     const { data, cidade } = req.query;
  console.log('parametros: ' + data + cidade);
@@ -117,7 +117,7 @@ exports.buscarMapasFinalizadosFiltro = async (req, res) => {
       });
     }
     console.log('parametros: ' + data + cidade);
-    const result = await MapaModel.buscarMapasFinalizadosFiltro(data, cidade);
+    const result = await MapaModel.buscarConcluidosFinalizadosFiltro(data, cidade);
 
     res.status(200).json(result);
   } catch (error) {
@@ -209,5 +209,27 @@ exports.finalizarMapa = async (req, res) => {
   } catch (error) {
     console.error("Erro ao finalizar mapa: ", error);
     return res.status(500).json({error: "Erro ao finalizar mapa"});
+  }
+};
+
+exports.concluirMapa = async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: "Parâmetros obrigatórios ausentes." });
+    }
+    const modifiedBy = req.userId
+
+    const result = await MapaModel.concluirMapa(id, modifiedBy);
+
+    return res.status(200).json({
+      sucesso: true,
+      mensagem: "Mapa concluído com sucesso!",
+      id: result.id
+    })
+  } catch (error) {
+    console.error("Erro ao concluir mapa: ", error);
+    return res.status(500).json({error: "Erro ao concluir mapa"});
   }
 }

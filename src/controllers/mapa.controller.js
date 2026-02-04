@@ -12,7 +12,7 @@ exports.inserirMapa = async (req, res) => {
 
     const id = await MapaModel.inserirMapa(data, cidade, dados, createdBy, placa, motorista, quantidade_total);
 
-    return res.status(201).json({
+    return res.status(200).json({
       sucesso: true,
       mensagem: "Mapa inserido com sucesso!",
       id

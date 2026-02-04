@@ -7,17 +7,43 @@ const MapaModel = {
         const sql = `
     INSERT INTO mapa.registro (data, cidade, dados, created_by, status, placa, motorista, quantidade_total)
     VALUES ($1::date, $2::varchar, $3::jsonb, $4::varchar, 'editavel', $5::varchar, $6::varchar, $7::integer)
-    RETURNING id
-  `;
+    RETURNING id`;
         const result = await pool.query(sql, [data, cidade, dadosJson, String(createdBy), placa, motorista, quantidade_total]);
         return result.rows[0].id;
     },
     buscarGases: async () => {
-        const result = await pool.query(`SELECT * From mapa.gases order by tipo`);
+        const sql = `
+    SELECT
+      id,
+      tipo,
+      REGEXP_REPLACE(
+        REGEXP_REPLACE(tamanho::TEXT, '\\.?0+$', ''),
+        '\\.$',
+        ''
+      ) AS tamanho,
+      unidade_medida,
+      tipo_cilindro
+    FROM mapa.gases
+    ORDER BY tipo, tamanho; -- ordena pelo NUMERIC real`;
+        const result = await pool.query(sql);
         return result.rows;
     },
+
     buscarGas: async (id) => {
-        const result = await pool.query(`SELECT * From mapa.gases where id = $1 order by tipo`, [id]);
+        const sql = `
+    SELECT
+      id,
+      tipo,
+      REGEXP_REPLACE(
+        REGEXP_REPLACE(tamanho::TEXT, '\\.?0+$', ''),
+        '\\.$',
+        ''
+      ) AS tamanho,
+      unidade_medida,
+      tipo_cilindro
+    FROM mapa.gases
+    WHERE id = $1;`;
+        const result = await pool.query(sql, [id]);
         return result.rows[0];
     },
 

@@ -15,6 +15,9 @@ const produtosRoutes = require("./routes/produtos.routes");
 const contasPagarRoutes = require("./routes/contas-pagar.routes");
 const nfeServicoRoutes = require("./routes/nfe-servico.routes");
 const mapaRoutes = require("./routes/mapa-routes");
+const veiculosRoutes = require("./routes/veiculos.routes");
+const motoristasRoutes = require("./routes/motoristas.routes");
+const tabuleiroRoutes = require("./routes/tabuleiro.routes");
 
 const app = express();
 app.use(express.json());
@@ -73,6 +76,10 @@ app.use("/produtos", authenticateToken, produtosRoutes);
 app.use("/contas-pagar", authenticateToken, contasPagarRoutes);
 app.use("/nfe-servico", authenticateToken, nfeServicoRoutes);
 app.use("/mapa", authenticateToken, mapaRoutes);
+app.use("/veiculos", authenticateToken, veiculosRoutes);
+app.use("/motoristas", authenticateToken, motoristasRoutes);
+app.use("/tabuleiro", authenticateToken, tabuleiroRoutes);
+
 
 // === TESTE DE TOKEN (opcional) ===
 app.get("/profile", authenticateToken, (req, res) => {

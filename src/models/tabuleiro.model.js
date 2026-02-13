@@ -5,7 +5,7 @@ const TabuleiroModalModel = {
     buscarTabuleiros: async (usuario, status) => {
         const userRes = await pool2.query(`select f.nome from funcionarios f inner join users u on f.usuario = u.username where u.id = $1`, [usuario]);
 
-        const result = await pool.query(`select r.*, c.total, s.descricao status from tabuleiro.registro r 
+        const result = await pool.query(`select r.*, to_char(r,data::date, 'DD-MM-YYYY') AS data_filtrada, c.total, s.descricao status from tabuleiro.registro r 
             inner join tabuleiro.carga_json c on r.id_carga_json = c.id 
             inner join tabuleiro.status s on s.id = r.id_status 
             where r.motorista = $1 and r.id_status = $2 order by r.data`, [userRes.rows[0].nome, status]);

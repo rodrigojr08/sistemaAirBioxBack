@@ -446,7 +446,7 @@ exports.salvarConferenciaRetornoConferente = async (req, res) => {
     if(!idTabuleiro){
       return res.status(400).json({error: "Parâmetro 'id' é obrigatório"});
     }
-    const resultado = await TabuleiroModal.salvarConferenciaRetornoConferente(id, userConferente);
+    const resultado = await TabuleiroModal.salvarConferenciaRetornoConferente(idTabuleiro, userConferente);
     return res.status(200).json({
       sucesso: true,
       mensagem: "Conferência do motorista salvo com sucesso!",

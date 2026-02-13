@@ -353,17 +353,6 @@ exports.buscarTabuleirosDoConfenrete = async (req, res) => {
   }
 };
 
-exports.buscarTabuleiroPorId = async (req, res) => {
-  try {
-    const usuario = req.userId;
-    const result = await TabuleiroModal.buscarTabuleiroPorId(usuario, req.params.id);
-    return res.status(200).json(result);
-  } catch (err) {
-    console.error("Erro ao buscar tabuleiro por ID:", err);
-    return res.status(500).json({ error: "Erro ao buscar tabuleiro por ID" });
-  }
-};
-
 exports.buscarTabuleiroDoConferentePorId = async (req, res) => {
   try{
     const result = await TabuleiroModal.buscarTabuleiroDoConferentePorId(req.params.id);

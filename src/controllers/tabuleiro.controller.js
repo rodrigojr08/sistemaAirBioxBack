@@ -327,7 +327,6 @@ exports.finalizarTabuleiro = async (req, res) => {
   }
 };
 
-const TabuleiroModal = require("../models/tabuleiro.model");
 
 exports.buscarTabuleiros = async (req, res) => {
     try {

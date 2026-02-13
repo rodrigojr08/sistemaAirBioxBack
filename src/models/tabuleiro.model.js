@@ -1,6 +1,5 @@
 const pool = require("../config/database2");
 const pool2 = require("../config/database");
-const { atualizarRetornoCarga } = require("../controllers/tabuleiro.controller");
 
 const TabuleiroModalModel = {
     buscarTabuleiros: async (usuario, status) => {

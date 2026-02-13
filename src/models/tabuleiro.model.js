@@ -1,5 +1,6 @@
 const pool = require("../config/database2");
 const pool2 = require("../config/database");
+const { atualizarRetornoCarga } = require("../controllers/tabuleiro.controller");
 
 const TabuleiroModalModel = {
     buscarTabuleiros: async (usuario, status) => {
@@ -12,6 +13,272 @@ const TabuleiroModalModel = {
         return result.rows;
     },
 
+    buscarTabuleirosParaEditar: async () => {
+        const result = await pool.query(`select r.id, to_char(r.data::date, 'DD-MM-YYYY') AS data, 
+            r.cidade, r.placa, r.motorista, s.descricao status from tabuleiro.registro r inner join tabuleiro.status s on s.id = r.id_status
+            where (id_status = 1 or id_status = 8 or id_status = 9) and r.id_mapa isnull`);
+        return result.rows;
+    },
+
+    selecionarTabuleiro: async (idTabuleiro) => {
+
+        const result = await pool.query(`
+        SELECT 
+            r.*, to_char(r.data_saida::date, 'DD-MM-YYYY') AS data_saida_filtrado, to_char(r.data_retorno::date, 'DD-MM-YYYY') AS data_retorno_filtrado, 
+            c.carga AS dados_carga, 
+            c.total AS total_carga, 
+            vc.dados AS dados_vazio_cheio, 
+            vc.total AS total_vazio_cheio,
+            v.venda AS dados_venda, 
+            v.total AS total_venda, 
+            v.id_vendas 
+        FROM tabuleiro.registro r 
+        LEFT JOIN tabuleiro.carga_json c 
+            ON r.id_carga_json = c.id 
+        LEFT JOIN tabuleiro.vazio_cheio_json vc 
+            ON r.id_vazio_cheio_json = vc.id
+        LEFT JOIN tabuleiro.venda_json v 
+            ON r.id_venda_json = v.id
+        WHERE r.id = $1
+    `, [idTabuleiro]);
+
+        if (result.rows.length === 0) return null;
+
+        const row = result.rows[0];
+
+        // 🔹 Coleta os IDs dos conferentes
+        const ids = [
+            row.conferente_id_finalizacao,
+            row.conferente_id_retorno,
+            row.conferente_id_saida,
+        ].filter((x) => x != null);
+
+        if (ids.length > 0) {
+            const nomesRes = await pool2.query(
+                `SELECT id, nome FROM users WHERE id = ANY($1::int[])`,
+                [ids]
+            );
+
+            const map = new Map(
+                nomesRes.rows.map((u) => [u.id, u.nome])
+            );
+
+            row.conferente_finalizacao_nome =
+                map.get(row.conferente_id_finalizacao)?.trim() ?? null;
+
+            row.conferente_retorno_nome =
+                map.get(row.conferente_id_retorno)?.trim() ?? null;
+
+            row.conferente_saida_nome =
+                map.get(row.conferente_id_saida)?.trim() ?? null;
+        } else {
+            row.conferente_finalizacao_nome = null;
+            row.conferente_retorno_nome = null;
+            row.conferente_saida_nome = null;
+        }
+
+        return row;
+    },
+
+    tabuleiroSelecionadoParaEditar: async (id) => {
+        const result = await pool.query(`select r.id, data, TRIM(r.cidade) AS cidade,
+            TRIM(r.placa) AS placa, TRIM(r.motorista) AS motorista, c.carga AS dados, c.total, 
+            r.balcao, r.id_status, r.id_carga_json from tabuleiro.registro r
+            inner join tabuleiro.carga_json c 
+            on r.id_carga_json = c.id
+            where r.id = $1;`, [id]);
+        return result.rows[0];
+    },
+
+    buscarTabuleirosFinalizadosConferente: async (data, cidade, usuario) => {
+        const userVigia = await pool2.query('select cargo from funcionarios f inner join users u on f.usuario = u.username where u.id = $1', [usuario])
+        const cargo = userVigia.rows[0]?.cargo?.trim() ?? '';
+        if (cargo != 'Vigia Diurno' && cargo != 'T.I' && cargo != 'Proprietario') {
+            throw new Error('Usuário não autorizado');
+        }
+
+        let sql = `select r.id, to_char(r.data::date, 'DD-MM-YYYY') AS data, r.cidade, r.placa, r.motorista, s.descricao status from tabuleiro.registro r
+        inner join tabuleiro.status s on s.id = r.id_status
+        where (conferente_id_finalizacao = $1 or conferente_id_retorno = $1 or conferente_id_saida = $1)`;
+
+        let params = [usuario];
+
+        if (data) {
+            sql += ` AND r.data::date = $${params.length + 1}`;
+            params.push(data);
+        }
+
+        if (cidade?.trim()) {
+            sql += ` AND r.cidade ILIKE $${params.length + 1}`;
+            params.push(`%${cidade}%`);
+        }
+
+        const result = await pool.query(sql, params);
+        return result.rows;
+
+    },
+
+    buscarTodosTabuleiros: async (data, outros, page, pageSize) => {
+        let baseSql = `
+    FROM tabuleiro.registro r
+    INNER JOIN tabuleiro.status s ON s.id = r.id_status
+  `;
+
+        const whereParts = [];
+        const params = [];
+
+        if (data) {
+            params.push(data);
+            whereParts.push(`r.data::date = $${params.length}::date`);
+        }
+
+        if (outros?.trim()) {
+            const term = `%${outros.trim()}%`;
+            params.push(term);
+            whereParts.push(`
+      (
+        r.cidade ILIKE $${params.length}
+        OR r.placa ILIKE $${params.length}
+        OR r.motorista ILIKE $${params.length}
+        OR s.descricao ILIKE $${params.length}
+      )
+    `);
+        }
+
+        const whereSql = whereParts.length ? ` WHERE ${whereParts.join(" AND ")}` : "";
+
+        // 1) total
+        const totalRes = await pool.query(
+            `SELECT COUNT(*)::int AS total ${baseSql} ${whereSql}`,
+            params
+        );
+        const total = totalRes.rows[0]?.total ?? 0;
+
+        // 2) itens paginados
+        const offset = (Number(page) - 1) * Number(pageSize);
+
+        const params2 = [...params];
+        params2.push(pageSize);
+        const limitPos = params2.length;
+
+        params2.push(offset);
+        const offsetPos = params2.length;
+
+        const dataSql = `
+    SELECT
+      r.id,
+      to_char(r.data::date, 'DD-MM-YYYY') AS data,
+      r.cidade,
+      r.placa,
+      r.motorista,
+      s.descricao AS status
+    ${baseSql}
+    ${whereSql}
+    ORDER BY r.data DESC, r.id DESC
+    LIMIT $${limitPos} OFFSET $${offsetPos}
+  `;
+
+        const result = await pool.query(dataSql, params2);
+
+        return {
+            page: Number(page),
+            pageSize: Number(pageSize),
+            total,
+            totalPages: Math.ceil(total / Number(pageSize)),
+            items: result.rows,
+        };
+    },
+
+    buscarTabuleiroFinalizadoConferente: async (id_tabuleiro) => {
+        const balcao = await pool.query(
+            `select balcao from tabuleiro.registro where id = $1`,
+            [id_tabuleiro]
+        );
+
+        const ehBalcao = Boolean(balcao.rows[0]?.balcao);
+
+        let sql;
+        if (ehBalcao) {
+            sql = `
+      SELECT r.id, r.id_carga_json, r.id_venda_json, r.id_vazio_cheio_json,
+        to_char(r.data::date, 'DD-MM-YYYY') AS data,
+        r.horario_saida, r.horario_retorno, r.conferente_id_saida, r.motorista, r.cidade, r.placa,
+        to_char(r.data_saida::date, 'DD-MM-YYYY') AS data_saida,
+        to_char(r.data_retorno::date, 'DD-MM-YYYY') AS data_retorno,
+        to_char(r.data_finalizacao::date, 'DD-MM-YYYY') AS data_finalizacao,
+        r.horario_finalizacao, r.balcao,
+        r.conferente_id_retorno, r.conferente_id_finalizacao,
+        c.total AS total_carga,
+        v.total AS total_vendas,
+        v.venda AS dados,
+        v.id_vendas AS id_vendas
+      FROM tabuleiro.registro r
+      INNER JOIN tabuleiro.carga_json c ON r.id_carga_json = c.id
+      INNER JOIN tabuleiro.venda_json v ON r.id_venda_json = v.id
+      WHERE r.id = $1
+    `;
+        } else {
+            sql = `
+      SELECT r.id, r.id_carga_json, r.id_venda_json, r.id_vazio_cheio_json,
+        to_char(r.data::date, 'DD-MM-YYYY') AS data,
+        r.horario_saida, r.horario_retorno, r.conferente_id_saida, r.motorista, r.cidade, r.placa,
+        to_char(r.data_saida::date, 'DD-MM-YYYY') AS data_saida,
+        to_char(r.data_retorno::date, 'DD-MM-YYYY') AS data_retorno,
+        to_char(r.data_finalizacao::date, 'DD-MM-YYYY') AS data_finalizacao,
+        r.horario_finalizacao, r.balcao,
+        r.conferente_id_retorno, r.conferente_id_finalizacao,
+        c.total AS total_carga,
+        vc.total AS total_vazio_cheio,
+        v.total AS total_vendas,
+        v.venda AS dados,
+        v.id_vendas AS id_vendas
+      FROM tabuleiro.registro r
+      INNER JOIN tabuleiro.carga_json c ON r.id_carga_json = c.id
+      INNER JOIN tabuleiro.vazio_cheio_json vc ON r.id_vazio_cheio_json = vc.id
+      INNER JOIN tabuleiro.venda_json v ON r.id_venda_json = v.id
+      WHERE r.id = $1
+    `;
+        }
+
+        const result = await pool.query(sql, [id_tabuleiro]);
+        if (result.rows.length === 0) return [];
+
+        const row = result.rows[0];
+
+        const ids = [
+            row.conferente_id_finalizacao,
+            row.conferente_id_retorno,
+            row.conferente_id_saida,
+        ].filter((x) => x != null);
+
+        if (ids.length > 0) {
+            const nomesRes = await pool2.query(
+                `SELECT id, nome FROM users WHERE id = ANY($1::int[])`,
+                [ids]
+            );
+
+            const map = new Map(nomesRes.rows.map((u) => [u.id, u.nome]));
+
+            row.conferente_finalizacao_nome = map.get(row.conferente_id_finalizacao)?.trim() ?? null;
+            row.conferente_retorno_nome = map.get(row.conferente_id_retorno)?.trim() ?? null;
+            row.conferente_saida_nome = map.get(row.conferente_id_saida)?.trim() ?? null;
+        } else {
+            row.conferente_finalizacao_nome = null;
+            row.conferente_retorno_nome = null;
+            row.conferente_saida_nome = null;
+        }
+
+        return row;
+    },
+
+    buscarTabuleiroParaEditar: async (id, usuario) => {
+        const result = await pool.query(`select r.*, vc.total, s.descricao status, vc.dados from tabuleiro.registro r 
+            inner join tabuleiro.vazio_cheio_json vc on r.id_vazio_cheio_json = vc.id 
+            inner join tabuleiro.status s on s.id = r.id_status 
+            where r.motorista_id = $2 and r.id_status = 4 and r.id = $1 order by r.data`, [id, usuario]);
+        return result.rows[0];
+    },
+
     buscarTabuleirosDoConferente: async (status, user_id) => {
         const userVigia = await pool2.query('select cargo from funcionarios f inner join users u on f.usuario = u.username where u.id = $1', [user_id])
         const cargo = userVigia.rows[0]?.cargo?.trim() ?? '';
@@ -19,7 +286,7 @@ const TabuleiroModalModel = {
             throw new Error('Usuário não autorizado');
         }
 
-        const result = await pool.query(`select r.*, c.total, s.descricao status from tabuleiro.registro r
+        const result = await pool.query(`select r.id, r.cidade, to_char(r.data::date, 'DD-MM-YYYY') AS data, r.motorista, r.placa, c.total, s.descricao status from tabuleiro.registro r
             inner join tabuleiro.carga_json c on r.id_carga_json = c.id
             inner join tabuleiro.status s on s.id = r.id_status
             where r.id_status = $1 order by r.data`, [status]);
@@ -31,35 +298,103 @@ const TabuleiroModalModel = {
         const result = await pool.query(`select r.*, c.total, s.descricao status, c.carga dados from tabuleiro.registro r 
             inner join tabuleiro.carga_json c on r.id_carga_json = c.id 
             inner join tabuleiro.status s on s.id = r.id_status 
-            where r.id = $2 order by r.data`, [id]);
+            where r.id = $1 order by r.data`, [id]);
         return result.rows;
     },
 
-    buscarTabuleiroDoConferentePorId: async (id) => {
-       
-        const result = await pool.query(`select r.*, c.total, s.descricao status, c.carga dados from tabuleiro.registro r 
+    buscarTabuleiroDoConferentePorIdSaida: async (id) => {
+
+        const result = await pool.query(`select r.*, to_char(r.data::date, 'DD-MM-YYYY') AS data_venda_retorno, c.total, s.descricao status, c.carga dados from tabuleiro.registro r 
             inner join tabuleiro.carga_json c on r.id_carga_json = c.id 
             inner join tabuleiro.status s on s.id = r.id_status 
             where r.id = $1 order by r.data`, [id])
-            return result.rows;
+        return result.rows;
     },
 
-    inserirTabuleiro: async (data, cidade, dados, createdBy, placa, motorista, quantidade_total) => {
-        const dadosJson = JSON.stringify(dados);
+    buscarTabuleiroDoConferentePorIdRetorno: async (id) => {
 
-        const sql_json_carga = ` INSERT INTO tabuleiro.carga_json (carga, total)
+        const result = await pool.query(`select r.*, vc.total, s.descricao status, vc.dados from tabuleiro.registro r 
+            inner join tabuleiro.vazio_cheio_json vc on r.id_vazio_cheio_json = vc.id 
+            inner join tabuleiro.status s on s.id = r.id_status 
+            where r.id = $1 order by r.data`, [id])
+        return result.rows;
+    },
+
+    buscarTabuleiroAFinalizar: async (id) => {
+        const result = await pool.query(`select r.*, vc.total total_vazio_cheio, s.descricao status, vc.dados vazio_cheio, c.total total_carga, c.carga from tabuleiro.registro r 
+            inner join tabuleiro.vazio_cheio_json vc on r.id_vazio_cheio_json = vc.id 
+			inner join tabuleiro.carga_json c on r.id_carga_json = c.id
+            inner join tabuleiro.status s on s.id = r.id_status  
+            where r.id = $1 order by r.data`, [id])
+        return result.rows[0];
+    },
+
+    inserirTabuleiro: async (data, cidade, dados, createdBy, placa, motorista, quantidade_total, balcao, venda_retorno) => {
+        if (!balcao) {
+            const dadosJson = JSON.stringify(dados);
+
+            const sql_json_carga = ` INSERT INTO tabuleiro.carga_json (carga, total)
     VALUES ($1::jsonb, $2::integer)
     RETURNING id`;
-        const result_json_carga = await pool.query(sql_json_carga, [dadosJson, quantidade_total]);
-        const carga_json_id = result_json_carga.rows[0].id;
+            const result_json_carga = await pool.query(sql_json_carga, [dadosJson, quantidade_total]);
+            const carga_json_id = result_json_carga.rows[0].id;
 
-        const sql = `
-    INSERT INTO tabuleiro.registro (data, cidade, id_carga_json, created_by, placa, motorista,  created_date)
-    VALUES ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW())
+            const sql = `
+    INSERT INTO tabuleiro.registro (data, cidade, id_carga_json, created_by, placa, motorista,  created_date, balcao)
+    VALUES ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW(), $7::boolean )
     RETURNING id
   `;
-        const result = await pool.query(sql, [data, cidade, carga_json_id, String(createdBy), placa, motorista]);
-        return result.rows[0].id;
+            const result = await pool.query(sql, [data, cidade, carga_json_id, String(createdBy), placa, motorista, balcao]);
+            return result.rows[0].id;
+        }
+        else {
+            const dadosJson = JSON.stringify(dados);
+            let status = 1;
+            venda_retorno == 'Retorno' ? status = 9 : status = 8;
+
+            const sql_json_carga = ` INSERT INTO tabuleiro.carga_json (carga, total)
+    VALUES ($1::jsonb, $2::integer)
+    RETURNING id`;
+            const result_json_carga = await pool.query(sql_json_carga, [dadosJson, quantidade_total]);
+            const carga_json_id = result_json_carga.rows[0].id;
+
+            const sql = `
+    INSERT INTO tabuleiro.registro (data, cidade, id_carga_json, created_by, placa, motorista,  created_date, balcao, id_status)
+    VALUES ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW(), $7::boolean, $8::integer )
+    RETURNING id
+  `;
+            const result = await pool.query(sql, [data, cidade, carga_json_id, String(createdBy), placa, motorista, balcao, status]);
+            return result.rows[0].id;
+        }
+    },
+
+    atualizarRetornoCarga: async (dados, idTabuleiro, total) => {
+        // 1) Busca o id do json vinculado ao registro
+        const idRes = await pool.query(
+            `SELECT id_vazio_cheio_json
+     FROM tabuleiro.registro
+     WHERE id = $1`,
+            [idTabuleiro]
+        );
+
+        const idVazioCheioJson = idRes.rows[0]?.id_vazio_cheio_json;
+        if (!idVazioCheioJson) {
+            throw new Error("Registro não encontrado ou sem id_vazio_cheio_json.");
+        }
+
+        // 2) Atualiza o json + total
+        const dadosJson = JSON.stringify(dados);
+
+        const upd = await pool.query(
+            `UPDATE tabuleiro.vazio_cheio_json
+     SET dados = $1::jsonb,
+         total = $2::integer
+     WHERE id = $3::integer
+     RETURNING id`,
+            [dadosJson, total, idVazioCheioJson]
+        );
+
+        return upd.rows[0].id;
     },
 
     verificarSenhaAssinatura: async (user_id, senha) => {
@@ -84,26 +419,37 @@ const TabuleiroModalModel = {
         await pool.query(sql, [id, userMotorista]);
     },
 
-    salvarConferenciaConferente: async (id, userConferente) => {
+    salvarConferenciaSaidaConferente: async (id, userConferente) => {
         const statusAtual = await pool.query(`SELECT id_status from tabuleiro.registro WHERE id = $1`, [id]);
-        if (statusAtual.rows.length === 2) {
+        if (statusAtual.rows.length === 0) {
             throw new Error("Registro não encontrado.");
         }
 
         const now = new Date();
         const horaAtual = now.toTimeString().slice(0, 8);
 
-        const sql = `UPDATE tabuleiro.registro SET id_status = 3, assinatura_conferente_saida = true, conferente_id = $2, horario_saida = $3, data_saida = NOW()  WHERE id = $1`;
+        const sql = `UPDATE tabuleiro.registro SET id_status = 3, assinatura_conferente_saida = true, conferente_id_saida = $2, horario_saida = $3, data_saida = NOW()  WHERE id = $1`;
         await pool.query(sql, [id, userConferente, horaAtual]);
     },
 
     salvarConferenciaRetornoConferente: async (id, userConferente) => {
-
         const now = new Date();
         const horaAtual = now.toTimeString().slice(0, 8);
 
-        const sql = `UPDATE tabuleiro.registro SET id_status = 5, assinatura_conferente_retorno = true, horario_retorno = $2, data_retorno = NOW(), conferente_id = $3 WHERE id = $1`;
+        const sql = `UPDATE tabuleiro.registro SET id_status = 5, assinatura_conferente_retorno = true, horario_retorno = $2, data_retorno = NOW(), conferente_id_retorno = $3 WHERE id = $1`;
         await pool.query(sql, [id, horaAtual, userConferente]);
+    },
+
+    salvarAlteracaoTabuleiro: async (id, data, cidade, placa, motorista, balcao, quantidade_total, id_carga_json, dados) => {
+        const sql = `UPDATE tabuleiro.registro SET data = $2, cidade = $3, placa = $4, motorista = $5, balcao = $6 Where id = $1 RETURNING *`;
+        const result = await pool.query(sql, [id, data, cidade, placa, motorista, balcao]);
+
+        const dadosJson = JSON.stringify(dados);
+
+        const sql2 = `UPDATE tabuleiro.carga_json SET carga = $2::jsonb, total = $3::integer where id = $1::integer RETURNING *`;
+        await pool.query(sql2, [id_carga_json, dadosJson, quantidade_total]);
+
+        return result.rows[0];
     },
 
 
@@ -119,6 +465,24 @@ const TabuleiroModalModel = {
         const sql = `UPDATE tabuleiro.registro SET id_status = 4, id_vazio_cheio_json = $2, assinatura_motorista_retorno = true WHERE id = $1`;
         const result = await pool.query(sql, [id, id_carga_json]);
         return result.rows[0];
+    },
+
+    finalizarTabuleiro: async (idTabuleiro, dados, total_venda, userConferente, id_vendas) => {
+        const dadosJson = JSON.stringify(dados);
+        const jsonVendas = JSON.stringify(id_vendas);
+        const sql_json_venda = await pool.query(`INSERT INTO tabuleiro.venda_json (venda, total, id_vendas) VALUES ($1::jsonb, $2::integer, $3::jsonb) RETURNING id`,
+            [dadosJson, total_venda, jsonVendas]);
+        const id_venda_json = sql_json_venda.rows[0].id;
+
+        const now = new Date();
+        const horaAtual = now.toTimeString().slice(0, 8);
+
+        const sql = `UPDATE tabuleiro.registro SET id_status = 7, id_venda_json= $2, conferente_id_finalizacao = $3, data_finalizacao = NOW(),
+        horario_finalizacao = $4  WHERE id = $1`
+
+        const result = await pool.query(sql, [idTabuleiro, id_venda_json, userConferente, horaAtual]);
+        return result.rows[0];
+
     }
 }
 

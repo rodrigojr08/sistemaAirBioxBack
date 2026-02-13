@@ -137,7 +137,7 @@ const MapaModel = {
 
     buscarMapa: async (id) => {
         let sql = `SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, 
-        created_by, modified_by, atualizado_em, status, placa, motorista, quantidade_total from mapa.registro where id = $1`;
+        created_by, modified_by, atualizado_em, status, TRIM(placa) AS placa, TRIM(motorista) AS motorista, quantidade_total from mapa.registro where id = $1`;
         const result = await pool.query(sql, [id]);
         return result.rows[0];
     },
@@ -161,13 +161,71 @@ const MapaModel = {
     },
 
     finalizarMapa: async (id, modifiedBy) => {
-        const sql = `UPDATE mapa.registro SET atualizado_em = NOW(), status = 'finalizado', modified_by = $2 WHERE id = $1 RETURNING id`;
-        const result = await pool.query(sql, [
-            id, modifiedBy
-        ]);
+        const client = await pool.connect();
+        try {
+            await client.query("BEGIN");
 
-        return result.rows[0];
+            const sql = `
+      UPDATE mapa.registro
+      SET atualizado_em = NOW(),
+          status = 'finalizado',
+          modified_by = $2
+      WHERE id = $1
+      RETURNING *;
+    `;
+            const upd = await client.query(sql, [id, modifiedBy]);
 
+            if (upd.rowCount === 0) {
+                throw new Error("Mapa não encontrado.");
+            }
+
+            const resultado = upd.rows[0];
+
+            const dadosJson = JSON.stringify(resultado.dados);
+
+            const sql_json_carga = `
+      INSERT INTO tabuleiro.carga_json (carga, total)
+      VALUES ($1::jsonb, $2::integer)
+      RETURNING id;
+    `;
+            const insCarga = await client.query(sql_json_carga, [
+                dadosJson,
+                resultado.quantidade_total ?? 0,
+            ]);
+            const carga_json_id = insCarga.rows[0].id;
+
+            const createdBy = resultado.created_by ?? resultado.createdBy ?? modifiedBy;
+
+            const sqlTabuleiro = `
+      INSERT INTO tabuleiro.registro
+        (data, cidade, id_carga_json, created_by, placa, motorista, created_date, balcao, id_mapa)
+      VALUES
+        ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW(), false, $7::integer)
+      RETURNING id;
+    `;
+            const insTab = await client.query(sqlTabuleiro, [
+                resultado.data,
+                resultado.cidade,
+                carga_json_id,
+                String(createdBy),
+                resultado.placa,
+                resultado.motorista,
+                id
+            ]);
+
+            await client.query("COMMIT");
+
+            return {
+                mapa_id: resultado.id,
+                tabuleiro_id: insTab.rows[0].id,
+                carga_json_id,
+            };
+        } catch (e) {
+            await client.query("ROLLBACK");
+            throw e;
+        } finally {
+            client.release();
+        }
     },
 
     concluirMapa: async (id, modifiedBy) => {
@@ -175,7 +233,6 @@ const MapaModel = {
         const result = await pool.query(sql, [
             id, modifiedBy
         ]);
-
         return result.rows[0];
 
     }

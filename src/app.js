@@ -35,6 +35,8 @@ app.use((req, res, next) => {
 const corsOptions = {
   origin: [
     "http://localhost:8100",
+    "http://localhost:8101",
+    "http://localhost:8102",
     "http://localhost",
     "https://localhost",
     "capacitor://localhost",

@@ -378,15 +378,15 @@ exports.verificarSenhaAssinatura = async (req, res) => {
 
 exports.inserirTabuleiro = async (req, res) => {
   try {
-    const { data, cidade, dados, placa, motorista, quantidade_total } = req.body;
+    const { data, cidade, dados, placa, motorista, quantidade_total, balcao, venda_retorno } = req.body;
 
-    if (!data || !cidade || !dados || !placa || !motorista || !quantidade_total) {
+    if (!data || !cidade || !dados || !placa || !motorista) {
       return res.status(400).json({ error: "Parâmetros obrigatórios ausentes." });
     }
 
     const createdBy = req.userId;
 
-    const id = await TabuleiroModal.inserirTabuleiro(data, cidade, dados, createdBy, placa, motorista, quantidade_total);
+    const id = await TabuleiroModal.inserirTabuleiro(data, cidade, dados, createdBy, placa, motorista, quantidade_total, balcao, venda_retorno);
 
     return res.status(201).json({
       sucesso: true,

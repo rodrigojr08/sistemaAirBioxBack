@@ -8,6 +8,7 @@ router.post("/inserir-tabuleiro", authenticateToken, tabuleiroController.inserir
 router.get("/buscar-tabuleiro/:id", authenticateToken, tabuleiroController.buscarTabuleiroPorId);
 router.get("/buscar-tabuleiro-editar/:id", authenticateToken, tabuleiroController.buscarTabuleiroParaEditar);
 router.get("/buscar-tabuleiros-para-editar", authenticateToken, tabuleiroController.buscarTabuleirosParaEditar);
+router.get("/buscar-tabuleiros-nao-finalizados", authenticateToken, tabuleiroController.buscarTabuleirosNaoFinalizado);
 router.get("/verificar-senha-assinatura/:senha", authenticateToken, tabuleiroController.verificarSenhaAssinatura);
 router.get("/selecionar-tabuleiro-para-editar/:idTabuleiro", authenticateToken, tabuleiroController.tabuleiroSelecionadoParaEditar);
 router.get("/buscar-todos-tabuleiros", authenticateToken, tabuleiroController.buscarTodosTabuleiros);

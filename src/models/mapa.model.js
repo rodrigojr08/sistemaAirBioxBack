@@ -1,4 +1,5 @@
 const pool = require("../config/database2");
+const pool2 = require("../config/database");
 
 const MapaModel = {
     inserirMapa: async (data, cidade, dados, createdBy, placa, motorista, quantidade_total) => {
@@ -165,6 +166,10 @@ const MapaModel = {
         try {
             await client.query("BEGIN");
 
+            const sql_id_motorista = `select u.id from funcionarios f inner join users u 
+            on f.usuario = u.username where f.nome = $1`;
+            const id_motorista = await pool2.query(sql_id_motorista, [motorista]);
+
             const sql = `
       UPDATE mapa.registro
       SET atualizado_em = NOW(),
@@ -198,9 +203,9 @@ const MapaModel = {
 
             const sqlTabuleiro = `
       INSERT INTO tabuleiro.registro
-        (data, cidade, id_carga_json, created_by, placa, motorista, created_date, balcao, id_mapa)
+        (data, cidade, id_carga_json, created_by, placa, motorista, created_date, balcao, id_mapa, motorista_id)
       VALUES
-        ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW(), false, $7::integer)
+        ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW(), false, $7::integer, $8::integer)
       RETURNING id;
     `;
             const insTab = await client.query(sqlTabuleiro, [
@@ -210,7 +215,8 @@ const MapaModel = {
                 String(createdBy),
                 resultado.placa,
                 resultado.motorista,
-                id
+                id,
+                id_motorista
             ]);
 
             await client.query("COMMIT");

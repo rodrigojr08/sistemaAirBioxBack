@@ -82,7 +82,7 @@ const TabuleiroModalModel = {
     tabuleiroSelecionadoParaEditar: async (id) => {
         const result = await pool.query(`select r.id, data, TRIM(r.cidade) AS cidade,
             TRIM(r.placa) AS placa, TRIM(r.motorista) AS motorista, c.carga AS dados, c.total, 
-            r.balcao, r.id_status, r.id_carga_json from tabuleiro.registro r
+            r.balcao, r.id_status, r.id_carga_json, r.clientes from tabuleiro.registro r
             inner join tabuleiro.carga_json c 
             on r.id_carga_json = c.id
             where r.id = $1;`, [id]);
@@ -98,7 +98,7 @@ const TabuleiroModalModel = {
 
         let sql = `select r.id, to_char(r.data::date, 'DD-MM-YYYY') AS data, r.cidade, r.placa, r.motorista, s.descricao status from tabuleiro.registro r
         inner join tabuleiro.status s on s.id = r.id_status
-        where (conferente_id_finalizacao = $1 or conferente_id_retorno = $1 or conferente_id_saida = $1)`;
+        where (conferente_id_finalizacao = $1 or conferente_id_retorno = $1 or conferente_id_saida = $1) AND r.id_status = 7`;
 
         let params = [usuario];
 
@@ -210,7 +210,8 @@ const TabuleiroModalModel = {
         c.total AS total_carga,
         v.total AS total_vendas,
         v.venda AS dados,
-        v.id_vendas AS id_vendas
+        v.id_vendas AS id_vendas,
+        r.clientes
       FROM tabuleiro.registro r
       INNER JOIN tabuleiro.carga_json c ON r.id_carga_json = c.id
       INNER JOIN tabuleiro.venda_json v ON r.id_venda_json = v.id
@@ -230,7 +231,8 @@ const TabuleiroModalModel = {
         vc.total AS total_vazio_cheio,
         v.total AS total_vendas,
         v.venda AS dados,
-        v.id_vendas AS id_vendas
+        v.id_vendas AS id_vendas,
+        r.clientes
       FROM tabuleiro.registro r
       INNER JOIN tabuleiro.carga_json c ON r.id_carga_json = c.id
       INNER JOIN tabuleiro.vazio_cheio_json vc ON r.id_vazio_cheio_json = vc.id
@@ -328,42 +330,70 @@ const TabuleiroModalModel = {
         return result.rows[0];
     },
 
-    inserirTabuleiro: async (data, cidade, dados, createdBy, placa, motorista, quantidade_total, balcao, venda_retorno) => {
-        if (!balcao) {
+    buscarTabuleirosNaoFinalizado: async (idUser) => {
+        const result = await pool.query(`select r.id, to_char(r.data::date, 'DD-MM-YYYY') AS data, 
+            TRIM(r.cidade) AS cidade, TRIM(r.placa) AS placa, TRIM(r.motorista) AS motorista, TRIM(s.descricao) AS status from tabuleiro.registro r inner join tabuleiro.status s on s.id = r.id_status
+            where (id_status != 7 AND id_status != 6 AND id_status != 10 and id_status != 1) and motorista_id = $1::integer`, [idUser])
+        return result.rows;
+    },
+
+    inserirTabuleiro: async (
+        data, cidade, dados, createdBy, placa, motorista,
+        quantidade_total, balcao, venda_retorno, clientes
+    ) => {
+        const client = await pool.connect();
+        try {
+            await client.query("BEGIN");
+
             const dadosJson = JSON.stringify(dados);
 
-            const sql_json_carga = ` INSERT INTO tabuleiro.carga_json (carga, total)
-    VALUES ($1::jsonb, $2::integer)
-    RETURNING id`;
-            const result_json_carga = await pool.query(sql_json_carga, [dadosJson, quantidade_total]);
+            const sql_json_carga = `
+      INSERT INTO tabuleiro.carga_json (carga, total)
+      VALUES ($1::jsonb, $2::integer)
+      RETURNING id;
+    `;
+            const result_json_carga = await client.query(sql_json_carga, [dadosJson, quantidade_total]);
             const carga_json_id = result_json_carga.rows[0].id;
 
-            const sql = `
-    INSERT INTO tabuleiro.registro (data, cidade, id_carga_json, created_by, placa, motorista,  created_date, balcao)
-    VALUES ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW(), $7::boolean )
-    RETURNING id
-  `;
-            const result = await pool.query(sql, [data, cidade, carga_json_id, String(createdBy), placa, motorista, balcao]);
-            return result.rows[0].id;
-        }
-        else {
-            const dadosJson = JSON.stringify(dados);
-            let status = 1;
-            venda_retorno == 'Retorno' ? status = 9 : status = 8;
+            const isBalcao = !!balcao; // true/false garantido
 
-            const sql_json_carga = ` INSERT INTO tabuleiro.carga_json (carga, total)
-    VALUES ($1::jsonb, $2::integer)
-    RETURNING id`;
-            const result_json_carga = await pool.query(sql_json_carga, [dadosJson, quantidade_total]);
-            const carga_json_id = result_json_carga.rows[0].id;
+            // clientes (se for coluna jsonb)
+            const jsonClientes = clientes != null ? JSON.stringify(clientes) : null;
 
-            const sql = `
-    INSERT INTO tabuleiro.registro (data, cidade, id_carga_json, created_by, placa, motorista,  created_date, balcao, id_status)
-    VALUES ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW(), $7::boolean, $8::integer )
-    RETURNING id
-  `;
-            const result = await pool.query(sql, [data, cidade, carga_json_id, String(createdBy), placa, motorista, balcao, status]);
+            let sql;
+            let params;
+
+            if (!isBalcao) {
+                sql = `
+        INSERT INTO tabuleiro.registro
+          (data, cidade, id_carga_json, created_by, placa, motorista, created_date, balcao, clientes)
+        VALUES
+          ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW(), $7::boolean, $8::jsonb)
+        RETURNING id;
+      `;
+                params = [data, cidade, carga_json_id, String(createdBy), placa, motorista, isBalcao, jsonClientes];
+            } else {
+                const status = (venda_retorno === "Retorno") ? 9 : 8;
+
+                sql = `
+        INSERT INTO tabuleiro.registro
+          (data, cidade, id_carga_json, created_by, placa, motorista, created_date, balcao, id_status, clientes)
+        VALUES
+          ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW(), $7::boolean, $8::integer, $9::jsonb)
+        RETURNING id;
+      `;
+                params = [data, cidade, carga_json_id, String(createdBy), placa, motorista, isBalcao, status, jsonClientes];
+            }
+
+            const result = await client.query(sql, params);
+
+            await client.query("COMMIT");
             return result.rows[0].id;
+        } catch (e) {
+            await client.query("ROLLBACK");
+            throw e;
+        } finally {
+            client.release();
         }
     },
 

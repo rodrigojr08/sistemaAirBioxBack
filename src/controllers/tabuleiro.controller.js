@@ -148,6 +148,17 @@ exports.buscarTabuleiroAFinalizar = async (req, res) => {
   }
 };
 
+exports.buscarTabuleirosNaoFinalizado = async (req, res) => {
+  try{
+    const user_id = req.userId;
+    const result = await TabuleiroModal.buscarTabuleirosNaoFinalizado(user_id);
+    return res.status(200).json(result);
+  }catch (err){
+    console.error("Erro ao buscar tabuleiros não finalizados", err);
+    return res.status(500).json({error: "Erro ao buscar tabuleiro não finalizado" });
+  }
+};
+
 exports.verificarSenhaAssinatura = async (req, res) => {
   try {
     const user_id = req.userId;
@@ -327,20 +338,6 @@ exports.finalizarTabuleiro = async (req, res) => {
   }
 };
 
-
-exports.buscarTabuleiros = async (req, res) => {
-    try {
-        const status = req.params.status;
-        const usuario = req.userId;
-        const result = await TabuleiroModal.buscarTabuleiros(usuario, status);
-        return res.status(200).json(result);
-    } catch (err) {
-        console.error("Erro ao buscar tabuleiros:", err);
-        return res.status(500).json({ error: "Erro ao buscar tabuleiros" });
-    }
-
-};
-
 exports.buscarTabuleirosDoConfenrete = async (req, res) => {
   try {
     const status = req.params.status;
@@ -378,7 +375,7 @@ exports.verificarSenhaAssinatura = async (req, res) => {
 
 exports.inserirTabuleiro = async (req, res) => {
   try {
-    const { data, cidade, dados, placa, motorista, quantidade_total, balcao, venda_retorno } = req.body;
+    const { data, cidade, dados, placa, motorista, quantidade_total, balcao, venda_retorno, clientes } = req.body;
 
     if (!data || !cidade || !dados || !placa || !motorista) {
       return res.status(400).json({ error: "Parâmetros obrigatórios ausentes." });
@@ -386,7 +383,7 @@ exports.inserirTabuleiro = async (req, res) => {
 
     const createdBy = req.userId;
 
-    const id = await TabuleiroModal.inserirTabuleiro(data, cidade, dados, createdBy, placa, motorista, quantidade_total, balcao, venda_retorno);
+    const id = await TabuleiroModal.inserirTabuleiro(data, cidade, dados, createdBy, placa, motorista, quantidade_total, balcao, venda_retorno, clientes);
 
     return res.status(201).json({
       sucesso: true,

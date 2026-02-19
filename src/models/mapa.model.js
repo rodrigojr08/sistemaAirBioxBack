@@ -165,10 +165,28 @@ const MapaModel = {
         const client = await pool.connect();
         try {
             await client.query("BEGIN");
+            const sql_motorista = `select TRIM(motorista) AS motorista from mapa.registro where id = $1`;
+            const motoristaRes = await pool.query(sql_motorista, [id]);
 
-            const sql_id_motorista = `select u.id from funcionarios f inner join users u 
-            on f.usuario = u.username where f.nome = $1`;
-            const id_motorista = await pool2.query(sql_id_motorista, [motorista]);
+            if (!motoristaRes.rows.length) {
+                throw new Error(`Não achei motorista no mapa.registro para id=${id}`);
+            }
+
+            const nomeMotorista = String(motoristaRes.rows[0].motorista ?? '').trim();
+
+            if (!nomeMotorista) {
+                throw new Error(`Motorista veio vazio no mapa.registro para id=${id}`);
+            }
+
+            const sql_id_motorista = `
+            select u.id
+            from funcionarios f
+            inner join users u on f.usuario = u.username
+            where TRIM(f.nome) ILIKE $1
+            limit 1
+            `;
+
+            const id_motorista = await pool2.query(sql_id_motorista, [`%${nomeMotorista}%`]);
 
             const sql = `
       UPDATE mapa.registro
@@ -216,7 +234,7 @@ const MapaModel = {
                 resultado.placa,
                 resultado.motorista,
                 id,
-                id_motorista
+                id_motorista.rows[0].id
             ]);
 
             await client.query("COMMIT");

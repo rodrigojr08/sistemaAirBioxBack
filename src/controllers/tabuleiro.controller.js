@@ -218,12 +218,12 @@ exports.inserirRetornoCarga = async (req, res) => {
 
 exports.salvarAlteracaoTabuleiro = async (req, res) => {
   try {
-    const {id, data, cidade, placa, motorista, balcao, quantidade_total, id_carga_json, dados } = req.body;
+    const {id, data, cidade, placa, motorista, balcao, quantidade_total, id_carga_json, dados, clientes } = req.body;
 
     if(!id || !data || !cidade || !placa || !motorista || !quantidade_total || !id_carga_json || !dados){
       return res.status(400).json({ error: "Parâmetros obrigatórios ausentes."});
     }
-    const retorno = await TabuleiroModal.salvarAlteracaoTabuleiro(id, data, cidade, placa, motorista, balcao, quantidade_total, id_carga_json, dados);
+    const retorno = await TabuleiroModal.salvarAlteracaoTabuleiro(id, data, cidade, placa, motorista, balcao, quantidade_total, id_carga_json, dados, clientes);
     return res.status(200).json({
       sucesso: true,
       mensagem: "Tabuleiro atualizado com sucesso!",

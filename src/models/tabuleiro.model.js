@@ -469,9 +469,10 @@ const TabuleiroModalModel = {
         await pool.query(sql, [id, horaAtual, userConferente]);
     },
 
-    salvarAlteracaoTabuleiro: async (id, data, cidade, placa, motorista, balcao, quantidade_total, id_carga_json, dados) => {
-        const sql = `UPDATE tabuleiro.registro SET data = $2, cidade = $3, placa = $4, motorista = $5, balcao = $6 Where id = $1 RETURNING *`;
-        const result = await pool.query(sql, [id, data, cidade, placa, motorista, balcao]);
+    salvarAlteracaoTabuleiro: async (id, data, cidade, placa, motorista, balcao, quantidade_total, id_carga_json, dados, clientes) => {
+        const dadosClientesJson= JSON.stringify(clientes);
+        const sql = `UPDATE tabuleiro.registro SET data = $2, cidade = $3, placa = $4, motorista = $5, balcao = $6, clientes = $7 Where id = $1 RETURNING *`;
+        const result = await pool.query(sql, [id, data, cidade, placa, motorista, balcao, dadosClientesJson]);
 
         const dadosJson = JSON.stringify(dados);
 

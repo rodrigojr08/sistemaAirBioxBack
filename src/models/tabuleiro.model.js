@@ -140,7 +140,7 @@ const TabuleiroModalModel = {
         OR r.placa ILIKE $${params.length}
         OR r.motorista ILIKE $${params.length}
         OR s.descricao ILIKE $${params.length}
-        OR r.clientes ILIKE $${params.length}
+        OR r.clientes::text ILIKE $${params.length}
       )
     `);
         }

@@ -14,7 +14,7 @@ const TabuleiroModalModel = {
 
     buscarTabuleirosParaEditar: async () => {
         const result = await pool.query(`select r.id, to_char(r.data::date, 'DD-MM-YYYY') AS data, 
-            r.cidade, r.placa, r.motorista, s.descricao status from tabuleiro.registro r inner join tabuleiro.status s on s.id = r.id_status
+            r.cidade, r.placa, r.motorista, s.descricao status, r.clientes from tabuleiro.registro r inner join tabuleiro.status s on s.id = r.id_status
             where (id_status = 1 or id_status = 8 or id_status = 9) and r.id_mapa isnull`);
         return result.rows;
     },
@@ -140,6 +140,7 @@ const TabuleiroModalModel = {
         OR r.placa ILIKE $${params.length}
         OR r.motorista ILIKE $${params.length}
         OR s.descricao ILIKE $${params.length}
+        OR r.clientes ILIKE $${params.length}
       )
     `);
         }
@@ -170,7 +171,8 @@ const TabuleiroModalModel = {
       r.cidade,
       r.placa,
       r.motorista,
-      s.descricao AS status
+      s.descricao AS status,
+      r.clientes
     ${baseSql}
     ${whereSql}
     ORDER BY r.data DESC, r.id DESC

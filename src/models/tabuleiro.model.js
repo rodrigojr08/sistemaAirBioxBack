@@ -92,7 +92,7 @@ const TabuleiroModalModel = {
     buscarTabuleirosFinalizadosConferente: async (data, cidade, usuario) => {
         const userVigia = await pool2.query('select cargo from funcionarios f inner join users u on f.usuario = u.username where u.id = $1', [usuario])
         const cargo = userVigia.rows[0]?.cargo?.trim() ?? '';
-        if (cargo != 'Vigia Diurno' && cargo != 'T.I' && cargo != 'Proprietario') {
+        if (cargo === 'Motorista') {
             throw new Error('Usuário não autorizado');
         }
 
@@ -285,7 +285,7 @@ const TabuleiroModalModel = {
     buscarTabuleirosDoConferente: async (status, user_id) => {
         const userVigia = await pool2.query('select cargo from funcionarios f inner join users u on f.usuario = u.username where u.id = $1', [user_id])
         const cargo = userVigia.rows[0]?.cargo?.trim() ?? '';
-        if (cargo != 'Vigia Diurno' && cargo != 'T.I' && cargo != 'Proprietario') {
+        if (cargo === 'Motorista') {
             throw new Error('Usuário não autorizado');
         }
 

@@ -18,6 +18,9 @@ const mapaRoutes = require("./routes/mapa-routes");
 const veiculosRoutes = require("./routes/veiculos.routes");
 const motoristasRoutes = require("./routes/motoristas.routes");
 const tabuleiroRoutes = require("./routes/tabuleiro.routes");
+const pontoRoutes = require("./routes/ponto.routes");
+const syncRoutes = require("./routes/sync.routes");
+const authenticateDevice = require("./middlewares/authenticateDevice");
 
 const app = express();
 app.use(express.json());
@@ -81,7 +84,8 @@ app.use("/mapa", authenticateToken, mapaRoutes);
 app.use("/veiculos", authenticateToken, veiculosRoutes);
 app.use("/motoristas", authenticateToken, motoristasRoutes);
 app.use("/tabuleiro", authenticateToken, tabuleiroRoutes);
-
+app.use("/ponto", authenticateDevice, pontoRoutes);
+app.use("/sync", syncRoutes);
 
 // === TESTE DE TOKEN (opcional) ===
 app.get("/profile", authenticateToken, (req, res) => {

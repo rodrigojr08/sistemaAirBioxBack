@@ -200,7 +200,7 @@ exports.inserirRetornoCarga = async (req, res) => {
   try {
     const { id, dados, quantidade_total } = req.body;
 
-    if (!id || !dados || !quantidade_total) {
+    if (!id) {
       return res.status(400).json({ error: "Parâmetros obrigatórios ausentes." });
     }
 
@@ -321,7 +321,7 @@ exports.finalizarTabuleiro = async (req, res) => {
     const { idTabuleiro, dados, total_vendas, id_vendas } = req.body;
     const userConferente = req.userId;
 
-    if (!idTabuleiro || !dados || !total_vendas) {
+    if (!idTabuleiro) {
       return res.status(400).json({ error: "Parâmetros obrigatórios ausentes." });
     }
 
@@ -335,18 +335,6 @@ exports.finalizarTabuleiro = async (req, res) => {
   } catch (error) {
     console.error("Erro ao finalizar tabuleiro", error);
     return res.status(500).json({ error: error.message || "Erro interno ao inserir mapa." });
-  }
-};
-
-exports.buscarTabuleirosDoConfenrete = async (req, res) => {
-  try {
-    const status = req.params.status;
-    const usuario = req.userId;
-    const result = await TabuleiroModal.buscarTabuleirosDoConferente(status, usuario);
-    return res.status(200).json(result);
-  }catch(err) {
-    console.error("Erro ao buscar tabuleiros: ", err);
-    return res.status(500).json({ error: "Erro ao buscar tabuleiros"});
   }
 };
 
@@ -396,25 +384,6 @@ exports.inserirTabuleiro = async (req, res) => {
   }
 };
 
-exports.inserirRetornoCarga = async (req, res) =>{
-try {
-    const { id, dados, quantidade_total } = req.body;
-
-    if (!id || !dados || !quantidade_total ) {
-      return res.status(400).json({ error: "Parâmetros obrigatórios ausentes." });
-    }
-
-    const retorno = await TabuleiroModal.inserirRetornoCarga(id, dados, quantidade_total);
-    return res.status(201).json({
-      sucesso: true,
-      mensagem: "Retorno de carga inserido com sucesso!",
-      retorno
-    });
-  } catch (error) {
-    console.error("Erro ao inserir retorno de carga:", error);
-    return res.status(500).json({ error: error.message || "Erro interno ao inserir retorno de carga." });
-  }
-};
 
 exports.savarConferenciaSaidaConferente = async (req, res) => {
   try{

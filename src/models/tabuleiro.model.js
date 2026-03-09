@@ -96,7 +96,7 @@ const TabuleiroModalModel = {
             throw new Error('Usuário não autorizado');
         }
 
-        let sql = `select r.id, to_char(r.data::date, 'DD-MM-YYYY') AS data, r.cidade, r.placa, r.motorista, s.descricao status from tabuleiro.registro r
+        let sql = `select r.id, to_char(r.data::date, 'DD-MM-YYYY') AS data, r.cidade, r.placa, r.motorista, s.descricao status, r.clientes from tabuleiro.registro r
         inner join tabuleiro.status s on s.id = r.id_status
         where (conferente_id_finalizacao = $1 or conferente_id_retorno = $1 or conferente_id_saida = $1) AND r.id_status = 7`;
 
@@ -289,7 +289,7 @@ const TabuleiroModalModel = {
             throw new Error('Usuário não autorizado');
         }
 
-        const result = await pool.query(`select r.id, r.cidade, to_char(r.data::date, 'DD-MM-YYYY') AS data, r.motorista, r.placa, c.total, s.descricao status from tabuleiro.registro r
+        const result = await pool.query(`select r.id, r.cidade, to_char(r.data::date, 'DD-MM-YYYY') AS data, r.motorista, r.placa, c.total, s.descricao status, r.clientes from tabuleiro.registro r
             inner join tabuleiro.carga_json c on r.id_carga_json = c.id
             inner join tabuleiro.status s on s.id = r.id_status
             where r.id_status = $1 order by r.data`, [status]);

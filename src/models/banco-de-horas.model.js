@@ -84,20 +84,21 @@ const BancoDeHoras = {
     }
   },
 
-  async inserirHorario({ idfunc, nome, data, hora, tipo_ponto, createdBy }) {
-    const query = `
-      INSERT INTO registro_pontos 
-        (idfunc, nome, data, hora, tipo_ponto, latitude, longitude, localizacao_nome, created_by, created_at)
-      VALUES 
-        ($1, $2, $3, $4, $5, NULL, NULL, 'Airbiox', $6, NOW())
-      RETURNING id;
-    `;
+async inserirHorario({ idfunc, nome, data, hora, tipo_ponto, createdBy }) {
+  const query = `
+    INSERT INTO registro_pontos 
+    ( idfunc, nome, data, hora, tipo_ponto, latitude, longitude, localizacao_nome, created_by, created_at )
+    VALUES 
+    ( $1, $2, $3, $4, $5, NULL, NULL, 'Airbiox', $6, NOW()) ON CONFLICT (idfunc, data, tipo_ponto)
+    DO UPDATE SET nome = EXCLUDED.nome, hora = EXCLUDED.hora, modified_by = $6, modified_at = NOW()
+    RETURNING id;
+  `;
 
-    const values = [idfunc, nome, data, hora, tipo_ponto, createdBy];
+  const values = [idfunc, nome, data, hora, tipo_ponto, createdBy];
 
-    const result = await pool.query(query, values);
-    return result.rows[0];
-  },
+  const result = await pool.query(query, values);
+  return result.rows[0];
+},
 
   async excluirHorario(id) {
     const query = `DELETE FROM registro_pontos WHERE id = $1`;

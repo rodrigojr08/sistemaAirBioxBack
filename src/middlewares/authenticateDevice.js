@@ -32,7 +32,7 @@ async function authenticateDevice(req, res, next) {
 
     // atualiza last_seen (opcional)
     pool.query(
-      `UPDATE ponto_dispositivo SET last_seen_at = NOW() WHERE id = $1`,
+      `UPDATE dispositivo_token SET last_seen_at = NOW() WHERE id = $1`,
       [rows[0].id]
     ).catch(() => {});
 

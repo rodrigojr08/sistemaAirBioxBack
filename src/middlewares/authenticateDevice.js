@@ -17,7 +17,7 @@ async function authenticateDevice(req, res, next) {
     const { rows } = await pool.query(
       `
       SELECT id, device_id, is_active
-      FROM ponto_dispositivo
+      FROM dispositivo_token
       WHERE token_hash = $1
       LIMIT 1
       `,

@@ -232,4 +232,31 @@ exports.concluirMapa = async (req, res) => {
     console.error("Erro ao concluir mapa: ", error);
     return res.status(500).json({error: "Erro ao concluir mapa"});
   }
+  
 }
+
+exports.reabrirMapa = async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    if (id == null) {
+      return res.status(400).json({
+        error: "Parâmetros obrigatórios ausentes."
+      });
+    }
+
+    const modifiedBy = req.userId;
+
+    await MapaModel.reabrirMapa(id, modifiedBy);
+
+    return res.status(200).json({
+      sucesso: true,
+      mensagem: "Mapa reaberto com sucesso!"
+    });
+  } catch (error) {
+    console.error("Erro ao reabrir mapa:", error);
+    return res.status(500).json({
+      error: "Erro ao reabrir mapa"
+    });
+  }
+};

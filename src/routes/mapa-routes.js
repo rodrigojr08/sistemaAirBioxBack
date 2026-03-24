@@ -16,5 +16,6 @@ router.get("/buscar-mapas-filtro", authenticateToken, mapaController.buscarMapas
 router.put("/atualizar-mapa/:id", authenticateToken, mapaController.atualizarMapa);
 router.put("/finalizar-mapa", authenticateToken, mapaController.finalizarMapa);
 router.put("/concluir-mapa", authenticateToken, mapaController.concluirMapa);
+router.put("/reabrir-mapa", authenticateToken, mapaController.reabrirMapa);
 
 module.exports = router;

@@ -20,6 +20,7 @@ const motoristasRoutes = require("./routes/motoristas.routes");
 const tabuleiroRoutes = require("./routes/tabuleiro.routes");
 const pontoRoutes = require("./routes/ponto.routes");
 const syncRoutes = require("./routes/sync.routes");
+const rondaRoutes = require("./routes/ronda.routes");
 const authenticateDevice = require("./middlewares/authenticateDevice");
 
 const app = express();
@@ -85,6 +86,7 @@ app.use("/veiculos", authenticateToken, veiculosRoutes);
 app.use("/motoristas", authenticateToken, motoristasRoutes);
 app.use("/tabuleiro", authenticateToken, tabuleiroRoutes);
 app.use("/ponto", authenticateDevice, pontoRoutes);
+app.use("/ronda", authenticateDevice, rondaRoutes);
 app.use("/sync", syncRoutes);
 
 // === TESTE DE TOKEN (opcional) ===

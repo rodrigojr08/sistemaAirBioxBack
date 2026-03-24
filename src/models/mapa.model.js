@@ -161,6 +161,55 @@ const MapaModel = {
         return result.rows[0];
     },
 
+    reabrirMapa: async (id, modifiedBy) => {
+        const client = await pool.connect();
+
+        try {
+            await client.query("BEGIN");
+
+            const sqlTabuleiro = `
+            SELECT id_carga_json
+            FROM tabuleiro.registro
+            WHERE id_mapa = $1
+        `;
+            const resultTabuleiro = await client.query(sqlTabuleiro, [id]);
+
+            const sqlTabuleiroDelete = `
+            DELETE FROM tabuleiro.registro
+            WHERE id_mapa = $1
+        `;
+            await client.query(sqlTabuleiroDelete, [id]);
+
+
+            if (resultTabuleiro.rows.length > 0) {
+                const idCargaJson = resultTabuleiro.rows[0].id_carga_json;
+
+                const sqlCargaJson = `
+                DELETE FROM tabuleiro.carga_json
+                WHERE id = $1
+            `;
+                await client.query(sqlCargaJson, [idCargaJson]);
+            }
+
+
+            const sqlMapa = `
+            UPDATE mapa.registro
+            SET status = 'editavel',
+                mapa_reaberto_em = NOW(),
+                mapa_reaberto_por = $2
+            WHERE id = $1
+        `;
+            await client.query(sqlMapa, [id, modifiedBy]);
+
+            await client.query("COMMIT");
+        } catch (e) {
+            await client.query("ROLLBACK");
+            throw e;
+        } finally {
+            client.release();
+        }
+    },
+
     finalizarMapa: async (id, modifiedBy) => {
         const client = await pool.connect();
         try {

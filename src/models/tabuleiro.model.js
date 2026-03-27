@@ -190,6 +190,81 @@ const TabuleiroModalModel = {
         };
     },
 
+    buscarTodosTabuleirosFinalizados: async (data, outros, page, pageSize) => {
+        let baseSql = `
+        FROM tabuleiro.registro r
+        INNER JOIN tabuleiro.status s ON s.id = r.id_status
+    `;
+
+        const whereParts = [];
+        const params = [];
+
+        // filtro fixo de finalizado
+        params.push('%finalizado%');
+        whereParts.push(`s.descricao ILIKE $${params.length}`);
+
+        if (data) {
+            params.push(data);
+            whereParts.push(`r.data::date = $${params.length}::date`);
+        }
+
+        if (outros?.trim()) {
+            const term = `%${outros.trim()}%`;
+            params.push(term);
+            whereParts.push(`
+            (
+                r.cidade ILIKE $${params.length}
+                OR r.placa ILIKE $${params.length}
+                OR r.motorista ILIKE $${params.length}
+                OR s.descricao ILIKE $${params.length}
+                OR r.clientes::text ILIKE $${params.length}
+            )
+        `);
+        }
+
+        const whereSql = whereParts.length ? ` WHERE ${whereParts.join(" AND ")}` : "";
+
+        const totalRes = await pool.query(
+            `SELECT COUNT(*)::int AS total ${baseSql} ${whereSql}`,
+            params
+        );
+        const total = totalRes.rows[0]?.total ?? 0;
+
+        const offset = (Number(page) - 1) * Number(pageSize);
+
+        const params2 = [...params];
+        params2.push(pageSize);
+        const limitPos = params2.length;
+
+        params2.push(offset);
+        const offsetPos = params2.length;
+
+        const dataSql = `
+        SELECT
+            r.id,
+            to_char(r.data::date, 'DD-MM-YYYY') AS data,
+            r.cidade,
+            r.placa,
+            r.motorista,
+            s.descricao AS status,
+            r.clientes
+        ${baseSql}
+        ${whereSql}
+        ORDER BY r.data DESC, r.id DESC
+        LIMIT $${limitPos} OFFSET $${offsetPos}
+    `;
+
+        const result = await pool.query(dataSql, params2);
+
+        return {
+            page: Number(page),
+            pageSize: Number(pageSize),
+            total,
+            totalPages: Math.ceil(total / Number(pageSize)),
+            items: result.rows,
+        };
+    },
+
     buscarTabuleiroFinalizadoConferente: async (id_tabuleiro) => {
         const balcao = await pool.query(
             `select balcao from tabuleiro.registro where id = $1`,
@@ -440,6 +515,43 @@ const TabuleiroModalModel = {
         return Number(senhaAssinaturaCorreta.rows[0]?.count ?? 0) > 0;
     },
 
+    salvarConferenciaTabuleiro: async (
+        id,
+        dados,
+        total_venda,
+        total_carga,
+        total_vazio_cheio,
+        observacao,
+        id_vendas,
+        userConferencia
+    ) => {
+        const dadosJson = JSON.stringify(dados);
+        const vendasJson = JSON.stringify(id_vendas);
+
+        const result_conferencia = await pool.query(
+            `INSERT INTO tabuleiro.conferencia_json
+      (conferencia, total_carga, id_vendas, observacoes, total_venda, total_vazio_cheio) 
+     VALUES
+      ($1::jsonb, $2::integer, $3::jsonb, $4::text, $5::integer, $6::integer)
+     RETURNING id`,
+            [dadosJson, total_carga, vendasJson, observacao, total_venda, total_vazio_cheio]
+        );
+
+        const result_update_tabuleiro = await pool.query(
+            `UPDATE tabuleiro.registro
+     SET id_usuario_conferencia = $1,
+         id_conferencia_json = $2,
+         data_conferencia = NOW(),
+         id_statis = 10
+         clientes = $4::jsonb
+     WHERE id = $3
+     RETURNING *`,
+            [userConferencia, result_conferencia.rows[0].id, id, vendasJson]
+        );
+
+        return result_update_tabuleiro.rows[0];
+    },
+
     salvarConferenciaMotorista: async (id, userMotorista) => {
         const statusAtual = await pool.query(`SELECT id_status from tabuleiro.registro WHERE id = $1`, [id]);
         if (statusAtual.rows.length === 0) {
@@ -472,7 +584,7 @@ const TabuleiroModalModel = {
     },
 
     salvarAlteracaoTabuleiro: async (id, data, cidade, placa, motorista, balcao, quantidade_total, id_carga_json, dados, clientes) => {
-        const dadosClientesJson= JSON.stringify(clientes);
+        const dadosClientesJson = JSON.stringify(clientes);
         const sql = `UPDATE tabuleiro.registro SET data = $2, cidade = $3, placa = $4, motorista = $5, balcao = $6, clientes = $7 Where id = $1 RETURNING *`;
         const result = await pool.query(sql, [id, data, cidade, placa, motorista, balcao, dadosClientesJson]);
 

@@ -25,6 +25,19 @@ exports.buscarTodosTabuleiros = async (req, res) => {
   }
 };
 
+exports.buscarTodosTabuleirosFinalizados = async (req, res) => {
+  try{
+    const {data, outros, page, pageSize} = req.query;
+    data == '' ? null : data;
+    outros == '' ? null : outros;
+    const result = await TabuleiroModal.buscarTodosTabuleirosFinalizados(data, outros, page, pageSize);
+    return res.status(200).json(result);
+  }catch (err) {
+    console.error("Erro ao buscar tabuleiros: ", err);
+    return res.status(500).json({error: "Erro ao buscar tabuleiros"});
+  }
+};
+
 exports.selecionarTabuleiro = async (req, res) => {
   try{
     const idTabuleiro = req.params.idTabuleiro;
@@ -234,6 +247,27 @@ exports.salvarAlteracaoTabuleiro = async (req, res) => {
     return res.status(500).json({error: error.mensagem || "Erro interno ao atualizar tabuleiro."});
   }
 };
+
+exports.salvarConferenciaTabuleiro = async (req, res) => {
+  try {
+    const {id, dados, total_venda, total_carga, total_vazio_cheio, observacao, id_vendas} = req.body;
+
+    if(!id || !dados || !total_venda || !total_carga || !total_vazio_cheio || !observacao || !id_vendas){
+      return res.status(400).json({error: "Parâmetros obrigatórios ausentes."});
+      
+    }
+    const userConferencia = req.userId;
+    const retorno = await TabuleiroModal.salvarConferenciaTabuleiro(id, dados, total_venda, total_carga, total_vazio_cheio, observacao, id_vendas, userConferencia);
+    return res.status(200).json({
+      sucesso: true,
+      mensagem: "Tabuleiro atualizado com sucesso!",
+      retorno
+    });
+  }catch(error){
+    console.error("Erro ao atualizar retorno de carga:", error);
+    return res.status(500).json({error: error.mensagem || "Erro interno ao atualizar tabuleiro."});
+  }
+}
 
 exports.atualizarRetornoCarga = async (req, res) => {
   try {

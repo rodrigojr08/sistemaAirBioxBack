@@ -13,10 +13,13 @@ router.get("/verificar-senha-assinatura/:senha", authenticateToken, tabuleiroCon
 router.get("/selecionar-tabuleiro-para-editar/:idTabuleiro", authenticateToken, tabuleiroController.tabuleiroSelecionadoParaEditar);
 router.get("/buscar-todos-tabuleiros", authenticateToken, tabuleiroController.buscarTodosTabuleiros);
 router.get("/selecionar-tabuleiro/:idTabuleiro", authenticateToken, tabuleiroController.selecionarTabuleiro);
+router.get("/buscar-tabuleiro-para-conferencia", authenticateToken, tabuleiroController.buscarTodosTabuleirosFinalizados);
 router.post("/inserir-retorno-carga", authenticateToken, tabuleiroController.inserirRetornoCarga);
 router.put("/salvar-alteracao-tabuleiro", authenticateToken, tabuleiroController.salvarAlteracaoTabuleiro);
 router.put("/salvar-conferencia-motorista", authenticateToken, tabuleiroController.salvarConferenciaMotorista);
 router.put("/atualizar-retorno-carga", authenticateToken, tabuleiroController.atualizarRetornoCarga);
+router.post("/salvar-conferencia-tabuleiro", authenticateToken, tabuleiroController.salvarConferenciaTabuleiro);
+
 
 router.get("/buscar-tabuleiros-conferente/:status", authenticateToken, tabuleiroController.buscarTabuleirosDoConfenrete);
 router.get("/buscar-tabuleiro-conferente-saida/:id", authenticateToken, tabuleiroController.buscarTabuleiroDoConferentePorIdSaida);

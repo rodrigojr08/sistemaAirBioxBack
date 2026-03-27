@@ -6,7 +6,7 @@ const sistemasController = require("../controllers/sistemas.controller");
 
 
 // Sistemas pai
-router.get("/", authenticateToken, checkPermission("sistemas"), sistemasController.getSistemas);
+router.get("/", authenticateToken, sistemasController.getSistemas);
 
 // Sistemas filhos
 router.get("/:parentId/filhos", authenticateToken, sistemasController.getSistemasFilhos);

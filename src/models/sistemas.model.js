@@ -10,7 +10,7 @@ async function getSistemasPaiByUser(userId) {
     INNER JOIN sistema_permissao sp ON s.id = sp.id_sistema
     INNER JOIN perfil p ON sp.id_perfil = p.id
     INNER JOIN usuario_perfil up on p.id= up.id_perfil
-	INNER JOIN users u on up.id_usuario = u.id
+	  INNER JOIN users u on up.id_usuario = u.id
     WHERE u.id = $1
       AND s.parent_id IS NULL
   `;
@@ -28,7 +28,7 @@ async function getSistemasFilhosByUser(userId, parentId) {
     INNER JOIN sistema_permissao sp ON s.id = sp.id_sistema
     INNER JOIN perfil p ON sp.id_perfil = p.id
     INNER JOIN usuario_perfil up on p.id= up.id_perfil
-	INNER JOIN users u on up.id_usuario = u.id
+	  INNER JOIN users u on up.id_usuario = u.id
     WHERE u.id = $1
       AND s.parent_id = $2
   `;
@@ -46,7 +46,7 @@ async function hasPermission(userId, rota) {
     INNER JOIN sistema_permissao sp ON s.id = sp.id_sistema
     INNER JOIN perfil p ON sp.id_perfil = p.id
     INNER JOIN usuario_perfil up ON up.id_perfil = p.id
-	INNER JOIN users u ON up.id_usuario = u.id
+	  INNER JOIN users u ON up.id_usuario = u.id
     WHERE u.id = $1
       AND s.rota = $2
   `;

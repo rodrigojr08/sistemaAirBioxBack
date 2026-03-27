@@ -6,12 +6,15 @@ const sistemasController = require("../controllers/sistemas.controller");
 
 
 // Sistemas pai
-router.get("/", authenticateToken, sistemasController.getSistemas);
+router.get("/", authenticateToken, checkPermission("sistemas"), sistemasController.getSistemas);
 
 // Sistemas filhos
-router.get("/:parentId/filhos", authenticateToken, sistemasController.getSistemasFilhos);
+router.get("/:parentId/filhos", authenticateToken, checkPermission("sistemas.filhos"), sistemasController.getSistemasFilhos
+);
 
 // Verificar permissão de rota
-router.get("/permissao/:rota", authenticateToken, sistemasController.checkPermission);
+router.get("/permissao/:rota", authenticateToken, (req, res, next) => checkPermission(req.params.rota)(req, res, next),
+  sistemasController.checkPermission
+);
 
 module.exports = router;

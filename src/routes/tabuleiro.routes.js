@@ -20,7 +20,6 @@ router.put("/salvar-conferencia-motorista", authenticateToken, tabuleiroControll
 router.put("/atualizar-retorno-carga", authenticateToken, tabuleiroController.atualizarRetornoCarga);
 router.post("/salvar-conferencia-tabuleiro", authenticateToken, tabuleiroController.salvarConferenciaTabuleiro);
 
-
 router.get("/buscar-tabuleiros-conferente/:status", authenticateToken, tabuleiroController.buscarTabuleirosDoConfenrete);
 router.get("/buscar-tabuleiro-conferente-saida/:id", authenticateToken, tabuleiroController.buscarTabuleiroDoConferentePorIdSaida);
 router.get("/buscar-tabuleiro-conferente-retorno/:id", authenticateToken, tabuleiroController.buscarTabuleiroDoConferentePorIdRetorno);

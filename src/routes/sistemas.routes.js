@@ -9,8 +9,7 @@ const sistemasController = require("../controllers/sistemas.controller");
 router.get("/", authenticateToken, checkPermission("sistemas"), sistemasController.getSistemas);
 
 // Sistemas filhos
-router.get("/:parentId/filhos", authenticateToken, checkPermission("sistemas.filhos"), sistemasController.getSistemasFilhos
-);
+router.get("/:parentId/filhos", authenticateToken, sistemasController.getSistemasFilhos);
 
 // Verificar permissão de rota
 router.get("/permissao/:rota", authenticateToken, sistemasController.checkPermission);

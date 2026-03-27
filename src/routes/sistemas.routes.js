@@ -13,8 +13,6 @@ router.get("/:parentId/filhos", authenticateToken, checkPermission("sistemas.fil
 );
 
 // Verificar permissão de rota
-router.get("/permissao/:rota", authenticateToken, (req, res, next) => checkPermission(req.params.rota)(req, res, next),
-  sistemasController.checkPermission
-);
+router.get("/permissao/:rota", authenticateToken, sistemasController.checkPermission);
 
 module.exports = router;

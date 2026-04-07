@@ -17,7 +17,8 @@ exports.buscarTodosTabuleiros = async (req, res) => {
     const {data, outros, page, pageSize} = req.query;
     data == '' ? null : data;
     outros == '' ? null : outros;
-    const result = await TabuleiroModal.buscarTodosTabuleiros(data, outros, page, pageSize);
+    const userId = req.userId;
+    const result = await TabuleiroModal.buscarTodosTabuleiros(data, outros, page, pageSize, userId);
     return res.status(200).json(result);
   }catch (err) {
     console.error("Erro ao buscar tabuleiros: ", err);
@@ -30,7 +31,8 @@ exports.buscarTodosTabuleirosFinalizados = async (req, res) => {
     const {data, outros, page, pageSize} = req.query;
     data == '' ? null : data;
     outros == '' ? null : outros;
-    const result = await TabuleiroModal.buscarTodosTabuleirosFinalizados(data, outros, page, pageSize);
+    const idUser = req.userId;
+    const result = await TabuleiroModal.buscarTodosTabuleirosFinalizados(data, outros, page, pageSize, idUser);
     return res.status(200).json(result);
   }catch (err) {
     console.error("Erro ao buscar tabuleiros: ", err);
@@ -41,7 +43,8 @@ exports.buscarTodosTabuleirosFinalizados = async (req, res) => {
 exports.selecionarTabuleiro = async (req, res) => {
   try{
     const idTabuleiro = req.params.idTabuleiro;
-    const result = await TabuleiroModal.selecionarTabuleiro(idTabuleiro);
+    const idUser = req.userId;
+    const result = await TabuleiroModal.selecionarTabuleiro(idTabuleiro, idUser);
     return res.status(200).json(result);
   }catch (err){
     console.error("Erro ao buscar tabuleiros: ", err);
@@ -51,7 +54,8 @@ exports.selecionarTabuleiro = async (req, res) => {
 
 exports.buscarTabuleirosParaEditar = async (req, res) => {
   try {
-    const result = await TabuleiroModal.buscarTabuleirosParaEditar();
+    const idUser = req.userId;
+    const result = await TabuleiroModal.buscarTabuleirosParaEditar(idUser);
     return res.status(200).json(result);
   } catch (err) {
     console.error("Erro ao buscar tabuleiros:", err);
@@ -62,7 +66,8 @@ exports.buscarTabuleirosParaEditar = async (req, res) => {
 exports.tabuleiroSelecionadoParaEditar = async (req, res) => {
   try{
     const idTabuleiro = req.params.idTabuleiro;
-    const result = await TabuleiroModal.tabuleiroSelecionadoParaEditar(idTabuleiro);
+    const user = req.userId;
+    const result = await TabuleiroModal.tabuleiroSelecionadoParaEditar(idTabuleiro, user);
     return res.status(200).json(result);
   }catch(err){
     console.error("Erro ao selecionar tabuleiro: ", err);

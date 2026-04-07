@@ -12,16 +12,54 @@ const TabuleiroModalModel = {
         return result.rows;
     },
 
-    buscarTabuleirosParaEditar: async () => {
-        const result = await pool.query(`select r.id, to_char(r.data::date, 'DD-MM-YYYY') AS data, 
-            r.cidade, r.placa, r.motorista, s.descricao status, r.clientes from tabuleiro.registro r inner join tabuleiro.status s on s.id = r.id_status
-            where (id_status = 1 or id_status = 8 or id_status = 9) and r.id_mapa isnull`);
-        return result.rows;
+    buscarTabuleirosParaEditar: async (idUser) => {
+        const permissaoResult = await pool2.query(`
+        select COUNT(s.nome) as permissao
+        from users u
+        inner join usuario_perfil up on u.username = up.usuario
+        inner join sistema_permissao sp on sp.id_perfil = up.id_perfil
+        inner join sistema s on s.id = sp.id_sistema
+        where u.id = $1 and sp.id_sistema = 36
+    `, [idUser]);
+
+        const permissao = Number(permissaoResult.rows[0].permissao);
+
+        if (permissao > 0) {
+            const result = await pool.query(`
+            select 
+                r.id, 
+                to_char(r.data::date, 'DD-MM-YYYY') as data, 
+                r.cidade, 
+                r.placa, 
+                r.motorista, 
+                s.descricao as status, 
+                r.clientes
+            from tabuleiro.registro r
+            inner join tabuleiro.status s on s.id = r.id_status
+            where (r.id_status = 1 or r.id_status = 8 or r.id_status = 9)
+              and r.id_mapa is null
+        `);
+
+            return result.rows;
+        } else {
+            throw new Error('Usuário não autorizado');
+        }
     },
 
-    selecionarTabuleiro: async (idTabuleiro) => {
+    selecionarTabuleiro: async (idTabuleiro, idUser) => {
+        const permissaoResult = await pool2.query(`
+        select COUNT(s.nome) as permissao
+        from users u
+        inner join usuario_perfil up on u.username = up.usuario
+        inner join sistema_permissao sp on sp.id_perfil = up.id_perfil
+        inner join sistema s on s.id = sp.id_sistema
+        where u.id = $1 and sp.id_sistema = 37 or sp.id_sistema = 38
+    `, [idUser]);
 
-        const result = await pool.query(`
+        const permissao = Number(permissaoResult.rows[0].permissao);
+
+        if (permissao > 0) {
+            const result = await pool.query(`
         SELECT 
             r.*, to_char(r.data_saida::date, 'DD-MM-YYYY') AS data_saida_filtrado, to_char(r.data_retorno::date, 'DD-MM-YYYY') AS data_retorno_filtrado, 
             c.carga AS dados_carga, 
@@ -41,52 +79,66 @@ const TabuleiroModalModel = {
         WHERE r.id = $1
     `, [idTabuleiro]);
 
-        if (result.rows.length === 0) return null;
+            if (result.rows.length === 0) return null;
 
-        const row = result.rows[0];
+            const row = result.rows[0];
 
-        // 🔹 Coleta os IDs dos conferentes
-        const ids = [
-            row.conferente_id_finalizacao,
-            row.conferente_id_retorno,
-            row.conferente_id_saida,
-        ].filter((x) => x != null);
+            // 🔹 Coleta os IDs dos conferentes
+            const ids = [
+                row.conferente_id_finalizacao,
+                row.conferente_id_retorno,
+                row.conferente_id_saida,
+            ].filter((x) => x != null);
 
-        if (ids.length > 0) {
-            const nomesRes = await pool2.query(
-                `SELECT id, nome FROM users WHERE id = ANY($1::int[])`,
-                [ids]
-            );
+            if (ids.length > 0) {
+                const nomesRes = await pool2.query(
+                    `SELECT id, nome FROM users WHERE id = ANY($1::int[])`,
+                    [ids]
+                );
 
-            const map = new Map(
-                nomesRes.rows.map((u) => [u.id, u.nome])
-            );
+                const map = new Map(
+                    nomesRes.rows.map((u) => [u.id, u.nome])
+                );
 
-            row.conferente_finalizacao_nome =
-                map.get(row.conferente_id_finalizacao)?.trim() ?? null;
+                row.conferente_finalizacao_nome =
+                    map.get(row.conferente_id_finalizacao)?.trim() ?? null;
 
-            row.conferente_retorno_nome =
-                map.get(row.conferente_id_retorno)?.trim() ?? null;
+                row.conferente_retorno_nome =
+                    map.get(row.conferente_id_retorno)?.trim() ?? null;
 
-            row.conferente_saida_nome =
-                map.get(row.conferente_id_saida)?.trim() ?? null;
-        } else {
-            row.conferente_finalizacao_nome = null;
-            row.conferente_retorno_nome = null;
-            row.conferente_saida_nome = null;
+                row.conferente_saida_nome =
+                    map.get(row.conferente_id_saida)?.trim() ?? null;
+            } else {
+                row.conferente_finalizacao_nome = null;
+                row.conferente_retorno_nome = null;
+                row.conferente_saida_nome = null;
+            }
+
+            return row;
         }
-
-        return row;
     },
 
-    tabuleiroSelecionadoParaEditar: async (id) => {
-        const result = await pool.query(`select r.id, data, TRIM(r.cidade) AS cidade,
+    tabuleiroSelecionadoParaEditar: async (id, idUser) => {
+        const permissaoResult = await pool2.query(`
+        select COUNT(s.nome) as permissao
+        from users u
+        inner join usuario_perfil up on u.username = up.usuario
+        inner join sistema_permissao sp on sp.id_perfil = up.id_perfil
+        inner join sistema s on s.id = sp.id_sistema
+        where u.id = $1 and sp.id_sistema = 36
+    `, [idUser]);
+
+        const permissao = Number(permissaoResult.rows[0].permissao);
+
+        if (permissao > 0) {
+            const result = await pool.query(`select r.id, data, TRIM(r.cidade) AS cidade,
             TRIM(r.placa) AS placa, TRIM(r.motorista) AS motorista, c.carga AS dados, c.total, 
             r.balcao, r.id_status, r.id_carga_json, r.clientes from tabuleiro.registro r
             inner join tabuleiro.carga_json c 
             on r.id_carga_json = c.id
             where r.id = $1;`, [id]);
-        return result.rows[0];
+            return result.rows[0];
+        }
     },
 
     buscarTabuleirosFinalizadosConferente: async (data, cidade, usuario) => {
@@ -117,24 +169,36 @@ const TabuleiroModalModel = {
 
     },
 
-    buscarTodosTabuleiros: async (data, outros, page, pageSize) => {
-        let baseSql = `
+    buscarTodosTabuleiros: async (data, outros, page, pageSize, idUser) => {
+        const permissaoResult = await pool2.query(`
+        select COUNT(s.nome) as permissao
+        from users u
+        inner join usuario_perfil up on u.username = up.usuario
+        inner join sistema_permissao sp on sp.id_perfil = up.id_perfil
+        inner join sistema s on s.id = sp.id_sistema
+        where u.id = $1 and sp.id_sistema = 37
+    `, [idUser]);
+
+        const permissao = Number(permissaoResult.rows[0].permissao);
+
+        if (permissao > 0) {
+            let baseSql = `
     FROM tabuleiro.registro r
     INNER JOIN tabuleiro.status s ON s.id = r.id_status
   `;
 
-        const whereParts = [];
-        const params = [];
+            const whereParts = [];
+            const params = [];
 
-        if (data) {
-            params.push(data);
-            whereParts.push(`r.data::date = $${params.length}::date`);
-        }
+            if (data) {
+                params.push(data);
+                whereParts.push(`r.data::date = $${params.length}::date`);
+            }
 
-        if (outros?.trim()) {
-            const term = `%${outros.trim()}%`;
-            params.push(term);
-            whereParts.push(`
+            if (outros?.trim()) {
+                const term = `%${outros.trim()}%`;
+                params.push(term);
+                whereParts.push(`
       (
         r.cidade ILIKE $${params.length}
         OR r.placa ILIKE $${params.length}
@@ -143,28 +207,28 @@ const TabuleiroModalModel = {
         OR r.clientes::text ILIKE $${params.length}
       )
     `);
-        }
+            }
 
-        const whereSql = whereParts.length ? ` WHERE ${whereParts.join(" AND ")}` : "";
+            const whereSql = whereParts.length ? ` WHERE ${whereParts.join(" AND ")}` : "";
 
-        // 1) total
-        const totalRes = await pool.query(
-            `SELECT COUNT(*)::int AS total ${baseSql} ${whereSql}`,
-            params
-        );
-        const total = totalRes.rows[0]?.total ?? 0;
+            // 1) total
+            const totalRes = await pool.query(
+                `SELECT COUNT(*)::int AS total ${baseSql} ${whereSql}`,
+                params
+            );
+            const total = totalRes.rows[0]?.total ?? 0;
 
-        // 2) itens paginados
-        const offset = (Number(page) - 1) * Number(pageSize);
+            // 2) itens paginados
+            const offset = (Number(page) - 1) * Number(pageSize);
 
-        const params2 = [...params];
-        params2.push(pageSize);
-        const limitPos = params2.length;
+            const params2 = [...params];
+            params2.push(pageSize);
+            const limitPos = params2.length;
 
-        params2.push(offset);
-        const offsetPos = params2.length;
+            params2.push(offset);
+            const offsetPos = params2.length;
 
-        const dataSql = `
+            const dataSql = `
     SELECT
       r.id,
       to_char(r.data::date, 'DD-MM-YYYY') AS data,
@@ -179,39 +243,53 @@ const TabuleiroModalModel = {
     LIMIT $${limitPos} OFFSET $${offsetPos}
   `;
 
-        const result = await pool.query(dataSql, params2);
+            const result = await pool.query(dataSql, params2);
 
-        return {
-            page: Number(page),
-            pageSize: Number(pageSize),
-            total,
-            totalPages: Math.ceil(total / Number(pageSize)),
-            items: result.rows,
-        };
+            return {
+                page: Number(page),
+                pageSize: Number(pageSize),
+                total,
+                totalPages: Math.ceil(total / Number(pageSize)),
+                items: result.rows,
+            };
+        }
     },
 
-    buscarTodosTabuleirosFinalizados: async (data, outros, page, pageSize) => {
-        let baseSql = `
+    buscarTodosTabuleirosFinalizados: async (data, outros, page, pageSize, idUser) => {
+
+        const permissaoResult = await pool2.query(`
+        select COUNT(s.nome) as permissao
+        from users u
+        inner join usuario_perfil up on u.username = up.usuario
+        inner join sistema_permissao sp on sp.id_perfil = up.id_perfil
+        inner join sistema s on s.id = sp.id_sistema
+        where u.id = $1 and sp.id_sistema = 38
+    `, [idUser]);
+
+        const permissao = Number(permissaoResult.rows[0].permissao);
+
+        if (permissao > 0) {
+            let baseSql = `
         FROM tabuleiro.registro r
         INNER JOIN tabuleiro.status s ON s.id = r.id_status
     `;
 
-        const whereParts = [];
-        const params = [];
+            const whereParts = [];
+            const params = [];
 
-        // filtro fixo de finalizado
-        params.push('%finalizado%');
-        whereParts.push(`s.descricao ILIKE $${params.length}`);
+            // filtro fixo de finalizado
+            params.push('%finalizado%');
+            whereParts.push(`s.descricao ILIKE $${params.length}`);
 
-        if (data) {
-            params.push(data);
-            whereParts.push(`r.data::date = $${params.length}::date`);
-        }
+            if (data) {
+                params.push(data);
+                whereParts.push(`r.data::date = $${params.length}::date`);
+            }
 
-        if (outros?.trim()) {
-            const term = `%${outros.trim()}%`;
-            params.push(term);
-            whereParts.push(`
+            if (outros?.trim()) {
+                const term = `%${outros.trim()}%`;
+                params.push(term);
+                whereParts.push(`
             (
                 r.cidade ILIKE $${params.length}
                 OR r.placa ILIKE $${params.length}
@@ -220,26 +298,26 @@ const TabuleiroModalModel = {
                 OR r.clientes::text ILIKE $${params.length}
             )
         `);
-        }
+            }
 
-        const whereSql = whereParts.length ? ` WHERE ${whereParts.join(" AND ")}` : "";
+            const whereSql = whereParts.length ? ` WHERE ${whereParts.join(" AND ")}` : "";
 
-        const totalRes = await pool.query(
-            `SELECT COUNT(*)::int AS total ${baseSql} ${whereSql}`,
-            params
-        );
-        const total = totalRes.rows[0]?.total ?? 0;
+            const totalRes = await pool.query(
+                `SELECT COUNT(*)::int AS total ${baseSql} ${whereSql}`,
+                params
+            );
+            const total = totalRes.rows[0]?.total ?? 0;
 
-        const offset = (Number(page) - 1) * Number(pageSize);
+            const offset = (Number(page) - 1) * Number(pageSize);
 
-        const params2 = [...params];
-        params2.push(pageSize);
-        const limitPos = params2.length;
+            const params2 = [...params];
+            params2.push(pageSize);
+            const limitPos = params2.length;
 
-        params2.push(offset);
-        const offsetPos = params2.length;
+            params2.push(offset);
+            const offsetPos = params2.length;
 
-        const dataSql = `
+            const dataSql = `
         SELECT
             r.id,
             to_char(r.data::date, 'DD-MM-YYYY') AS data,
@@ -254,15 +332,16 @@ const TabuleiroModalModel = {
         LIMIT $${limitPos} OFFSET $${offsetPos}
     `;
 
-        const result = await pool.query(dataSql, params2);
+            const result = await pool.query(dataSql, params2);
 
-        return {
-            page: Number(page),
-            pageSize: Number(pageSize),
-            total,
-            totalPages: Math.ceil(total / Number(pageSize)),
-            items: result.rows,
-        };
+            return {
+                page: Number(page),
+                pageSize: Number(pageSize),
+                total,
+                totalPages: Math.ceil(total / Number(pageSize)),
+                items: result.rows,
+            };
+        }
     },
 
     buscarTabuleiroFinalizadoConferente: async (id_tabuleiro) => {
@@ -418,59 +497,72 @@ const TabuleiroModalModel = {
         data, cidade, dados, createdBy, placa, motorista,
         quantidade_total, balcao, venda_retorno, clientes
     ) => {
-        const client = await pool.connect();
-        try {
-            await client.query("BEGIN");
+        const permissaoResult = await pool2.query(`
+        select COUNT(s.nome) as permissao
+        from users u
+        inner join usuario_perfil up on u.username = up.usuario
+        inner join sistema_permissao sp on sp.id_perfil = up.id_perfil
+        inner join sistema s on s.id = sp.id_sistema
+        where u.id = $1 and sp.id_sistema = 35
+    `, [idUser]);
 
-            const dadosJson = JSON.stringify(dados);
+        const permissao = Number(permissaoResult.rows[0].permissao);
 
-            const sql_json_carga = `
+        if (permissao > 0) {
+            const client = await pool.connect();
+            try {
+                await client.query("BEGIN");
+
+                const dadosJson = JSON.stringify(dados);
+
+                const sql_json_carga = `
       INSERT INTO tabuleiro.carga_json (carga, total)
       VALUES ($1::jsonb, $2::integer)
       RETURNING id;
     `;
-            const result_json_carga = await client.query(sql_json_carga, [dadosJson, quantidade_total]);
-            const carga_json_id = result_json_carga.rows[0].id;
+                const result_json_carga = await client.query(sql_json_carga, [dadosJson, quantidade_total]);
+                const carga_json_id = result_json_carga.rows[0].id;
 
-            const isBalcao = !!balcao; // true/false garantido
+                const isBalcao = !!balcao; // true/false garantido
 
-            // clientes (se for coluna jsonb)
-            const jsonClientes = clientes != null ? JSON.stringify(clientes) : null;
+                // clientes (se for coluna jsonb)
+                const jsonClientes = clientes != null ? JSON.stringify(clientes) : null;
 
-            let sql;
-            let params;
+                let sql;
+                let params;
 
-            if (!isBalcao) {
-                sql = `
+                if (!isBalcao) {
+                    sql = `
         INSERT INTO tabuleiro.registro
           (data, cidade, id_carga_json, created_by, placa, motorista, created_date, balcao, clientes)
         VALUES
           ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW(), $7::boolean, $8::jsonb)
         RETURNING id;
       `;
-                params = [data, cidade, carga_json_id, String(createdBy), placa, motorista, isBalcao, jsonClientes];
-            } else {
-                const status = (venda_retorno === "Retorno") ? 9 : 8;
+                    params = [data, cidade, carga_json_id, String(createdBy), placa, motorista, isBalcao, jsonClientes];
+                } else {
+                    const status = (venda_retorno === "Retorno") ? 9 : 8;
 
-                sql = `
+                    sql = `
         INSERT INTO tabuleiro.registro
           (data, cidade, id_carga_json, created_by, placa, motorista, created_date, balcao, id_status, clientes)
         VALUES
           ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW(), $7::boolean, $8::integer, $9::jsonb)
         RETURNING id;
       `;
-                params = [data, cidade, carga_json_id, String(createdBy), placa, motorista, isBalcao, status, jsonClientes];
+                    params = [data, cidade, carga_json_id, String(createdBy), placa, motorista, isBalcao, status, jsonClientes];
+                }
+
+                const result = await client.query(sql, params);
+
+                await client.query("COMMIT");
+                return result.rows[0].id;
+            } catch (e) {
+                await client.query("ROLLBACK");
+                throw e;
+            } finally {
+                client.release();
             }
-
-            const result = await client.query(sql, params);
-
-            await client.query("COMMIT");
-            return result.rows[0].id;
-        } catch (e) {
-            await client.query("ROLLBACK");
-            throw e;
-        } finally {
-            client.release();
         }
     },
 

@@ -60,6 +60,19 @@ exports.criarJornada = async (req, res) => {
   }
 };
 
+exports.buscarHorarios = async (req, res) => {
+  try {
+    const result = await RondaModel.buscarHorarios();
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error("Erro ao buscar horários:", err);
+    return res.status(500).json({
+      ok: false,
+      error: "Erro ao buscar horários",
+    });
+  }
+};
+
 exports.salvarJornadaSlot = async (req, res) => {
   try {
     const {

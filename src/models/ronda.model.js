@@ -28,6 +28,11 @@ const RondaModel = {
     return result.rows[0];
   },
 
+  buscarHorarios: async () => {
+    const result = await pool.query(`SELECT * from ronda.horarios order by id`, []);
+    return result.rows;
+  },
+
   salvarJornadaSlot: async ({
     jornada_id,
     ronda_numero,

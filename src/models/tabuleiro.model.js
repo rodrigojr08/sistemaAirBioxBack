@@ -634,11 +634,10 @@ const TabuleiroModalModel = {
      SET id_usuario_conferencia = $1,
          id_conferencia_json = $2,
          data_conferencia = NOW(),
-         id_statis = 10
-         clientes = $4::jsonb
+         id_status = 10
      WHERE id = $3
      RETURNING *`,
-            [userConferencia, result_conferencia.rows[0].id, id, vendasJson]
+            [userConferencia, result_conferencia.rows[0].id, id]
         );
 
         return result_update_tabuleiro.rows[0];

@@ -504,7 +504,7 @@ const TabuleiroModalModel = {
         inner join sistema_permissao sp on sp.id_perfil = up.id_perfil
         inner join sistema s on s.id = sp.id_sistema
         where u.id = $1 and sp.id_sistema = 35
-    `, [idUser]);
+    `, [createdBy]);
 
         const permissao = Number(permissaoResult.rows[0].permissao);
 

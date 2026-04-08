@@ -357,14 +357,14 @@ exports.salvarConferenciaMotorista = async (req, res) => {
 
 exports.finalizarTabuleiro = async (req, res) => {
   try {
-    const { idTabuleiro, dados, total_vendas, id_vendas } = req.body;
+    const { idTabuleiro, dados, total_vendas, id_vendas, total_vazio_cheio } = req.body;
     const userConferente = req.userId;
 
     if (!idTabuleiro) {
       return res.status(400).json({ error: "Parâmetros obrigatórios ausentes." });
     }
 
-    const resultado = await TabuleiroModal.finalizarTabuleiro(idTabuleiro, dados, total_vendas, userConferente, id_vendas);
+    const resultado = await TabuleiroModal.finalizarTabuleiro(idTabuleiro, dados, total_vendas, userConferente, id_vendas, total_vazio_cheio);
 
     return res.status(200).json({
       sucesso: true,

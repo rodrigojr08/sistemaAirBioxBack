@@ -724,22 +724,84 @@ const TabuleiroModalModel = {
         return result.rows[0];
     },
 
-    finalizarTabuleiro: async (idTabuleiro, dados, total_venda, userConferente, id_vendas) => {
+    finalizarTabuleiro: async (
+        idTabuleiro,
+        dados,
+        total_venda,
+        userConferente,
+        id_vendas,
+        total_vazio_cheio
+    ) => {
         const dadosJson = JSON.stringify(dados);
         const jsonVendas = JSON.stringify(id_vendas);
-        const sql_json_venda = await pool.query(`INSERT INTO tabuleiro.venda_json (venda, total, id_vendas) VALUES ($1::jsonb, $2::integer, $3::jsonb) RETURNING id`,
-            [dadosJson, total_venda, jsonVendas]);
+
+        const sql_json_venda = await pool.query(
+            `INSERT INTO tabuleiro.venda_json (venda, total, id_vendas)
+     VALUES ($1::jsonb, $2::integer, $3::jsonb)
+     RETURNING id`,
+            [dadosJson, total_venda, jsonVendas]
+        );
+
+        const consultaRegistro = await pool.query(
+            `SELECT id_vazio_cheio_json
+     FROM tabuleiro.registro
+     WHERE id = $1`,
+            [idTabuleiro]
+        );
+
+        if (consultaRegistro.rows.length === 0) {
+            throw new Error("Tabuleiro não encontrado.");
+        }
+
+        const idVazioCheioAtual = consultaRegistro.rows[0].id_vazio_cheio_json;
+
+        let novoIdVazioCheio = null;
+
+        if (idVazioCheioAtual == null) {
+            const totalVazioCheioNormalizado =
+                total_vazio_cheio === undefined ||
+                    total_vazio_cheio === null ||
+                    total_vazio_cheio === ""
+                    ? 0
+                    : Number(total_vazio_cheio);
+
+            const sql_json_vazio_cheio = await pool.query(
+                `INSERT INTO tabuleiro.vazio_cheio_json (dados, total)
+       VALUES ($1::jsonb, $2::integer)
+       RETURNING id`,
+                [dadosJson, isNaN(totalVazioCheioNormalizado) ? 0 : totalVazioCheioNormalizado]
+            );
+
+            novoIdVazioCheio = sql_json_vazio_cheio.rows[0].id;
+        }
+
         const id_venda_json = sql_json_venda.rows[0].id;
 
         const now = new Date();
         const horaAtual = now.toTimeString().slice(0, 8);
 
-        const sql = `UPDATE tabuleiro.registro SET id_status = 7, id_venda_json= $2, conferente_id_finalizacao = $3, data_finalizacao = NOW(),
-        horario_finalizacao = $4  WHERE id = $1`
+        const sql = `
+    UPDATE tabuleiro.registro
+    SET
+      id_status = 7,
+      id_venda_json = $2,
+      id_vazio_cheio_json = COALESCE(id_vazio_cheio_json, $3),
+      conferente_id_finalizacao = $4,
+      data_finalizacao = NOW(),
+      horario_finalizacao = $5
+    WHERE id = $1
+    RETURNING *
+  `;
 
-        const result = await pool.query(sql, [idTabuleiro, id_venda_json, userConferente, horaAtual]);
+        const result = await pool.query(sql, [
+            idTabuleiro,
+            id_venda_json,
+            novoIdVazioCheio,
+            userConferente,
+            horaAtual
+        ]);
+
         return result.rows[0];
-
     }
 }
 

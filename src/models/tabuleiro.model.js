@@ -53,31 +53,53 @@ const TabuleiroModalModel = {
         inner join usuario_perfil up on u.username = up.usuario
         inner join sistema_permissao sp on sp.id_perfil = up.id_perfil
         inner join sistema s on s.id = sp.id_sistema
-        where u.id = $1 and sp.id_sistema = 37 or sp.id_sistema = 38
+        where u.id = $1 and (sp.id_sistema = 37 or sp.id_sistema = 38)
     `, [idUser]);
 
         const permissao = Number(permissaoResult.rows[0].permissao);
 
         if (permissao > 0) {
             const result = await pool.query(`
-        SELECT 
-            r.*, to_char(r.data_saida::date, 'DD-MM-YYYY') AS data_saida_filtrado, to_char(r.data_retorno::date, 'DD-MM-YYYY') AS data_retorno_filtrado, 
-            c.carga AS dados_carga, 
-            c.total AS total_carga, 
-            vc.dados AS dados_vazio_cheio, 
-            vc.total AS total_vazio_cheio,
-            v.venda AS dados_venda, 
-            v.total AS total_venda, 
-            v.id_vendas 
-        FROM tabuleiro.registro r 
-        LEFT JOIN tabuleiro.carga_json c 
-            ON r.id_carga_json = c.id 
-        LEFT JOIN tabuleiro.vazio_cheio_json vc 
-            ON r.id_vazio_cheio_json = vc.id
-        LEFT JOIN tabuleiro.venda_json v 
-            ON r.id_venda_json = v.id
-        WHERE r.id = $1
-    `, [idTabuleiro]);
+            SELECT 
+                r.*, 
+                to_char(r.data_saida::date, 'DD-MM-YYYY') AS data_saida_filtrado, 
+                to_char(r.data_retorno::date, 'DD-MM-YYYY') AS data_retorno_filtrado,
+                to_char(r.data_conferencia::date, 'DD-MM-YYYY') AS data_conferencia_filtrado,
+
+                c.carga AS dados_carga, 
+                c.total AS total_carga, 
+
+                vc.dados AS dados_vazio_cheio, 
+                vc.total AS total_vazio_cheio,
+
+                v.venda AS dados_venda, 
+                v.total AS total_venda, 
+                v.id_vendas,
+
+                conf.id AS conferencia_id,
+                conf.conferencia AS dados_conferencia,
+                conf.total_carga AS conferencia_total_carga,
+                conf.id_vendas AS conferencia_id_vendas,
+                conf.observacoes AS conferencia_observacoes,
+                conf.total_venda AS conferencia_total_venda,
+                conf.total_vazio_cheio AS conferencia_total_vazio_cheio
+
+            FROM tabuleiro.registro r 
+
+            LEFT JOIN tabuleiro.carga_json c 
+                ON r.id_carga_json = c.id 
+
+            LEFT JOIN tabuleiro.vazio_cheio_json vc 
+                ON r.id_vazio_cheio_json = vc.id
+
+            LEFT JOIN tabuleiro.venda_json v 
+                ON r.id_venda_json = v.id
+
+            LEFT JOIN tabuleiro.conferencia_json conf
+                ON r.id_conferencia_json = conf.id
+
+            WHERE r.id = $1
+        `, [idTabuleiro]);
 
             if (result.rows.length === 0) return null;
 

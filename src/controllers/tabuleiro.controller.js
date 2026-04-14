@@ -63,6 +63,29 @@ exports.buscarTabuleirosParaEditar = async (req, res) => {
   }
 };
 
+exports.buscarTabuleirosParaCancelar = async (req, res) => {
+  try {
+    const idUser = req.userId;
+    const result = await TabuleiroModal.buscarTabuleirosParaCancelar(idUser);
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error("Erro ao buscar tabuleiros:", err);
+    return res.status(500).json({ error: "Erro ao buscar tabuleiros"});
+  }
+}
+
+exports.tabuleiroSelecionadoParaCancelar = async (req, res) => {
+  try{
+    const { idTabuleiro } = req.body;
+    const idUser = req.userId;
+    const result = await TabuleiroModal.tabuleiroSelecionadoParaCancelar(idTabuleiro, idUser);
+    return res.status(200).json(result);
+  } catch (err){
+    console.error("Erro ao buscar tabuleiros: ", err);
+    return res.status(500).json({error: "Erro ao selecionar tabuleiro"});
+  }
+}
+
 exports.tabuleiroSelecionadoParaEditar = async (req, res) => {
   try{
     const idTabuleiro = req.params.idTabuleiro;

@@ -46,6 +46,39 @@ const TabuleiroModalModel = {
         }
     },
 
+        buscarTabuleirosParaCancelar: async (idUser) => {
+        const permissaoResult = await pool2.query(`
+        select COUNT(s.nome) as permissao
+        from users u
+        inner join usuario_perfil up on u.username = up.usuario
+        inner join sistema_permissao sp on sp.id_perfil = up.id_perfil
+        inner join sistema s on s.id = sp.id_sistema
+        where u.id = $1 and sp.id_sistema = 41
+    `, [idUser]);
+
+        const permissao = Number(permissaoResult.rows[0].permissao);
+
+        if (permissao > 0) {
+            const result = await pool.query(`
+            select 
+                r.id, 
+                to_char(r.data::date, 'DD-MM-YYYY') as data, 
+                r.cidade, 
+                r.placa, 
+                r.motorista, 
+                s.descricao as status, 
+                r.clientes
+            from tabuleiro.registro r
+            inner join tabuleiro.status s on s.id = r.id_status
+            where r.id_status = 2 and r.id_mapa is null
+        `);
+
+            return result.rows;
+        } else {
+            throw new Error('Usuário não autorizado');
+        }
+    },
+
     selecionarTabuleiro: async (idTabuleiro, idUser) => {
         const permissaoResult = await pool2.query(`
         select COUNT(s.nome) as permissao
@@ -53,7 +86,7 @@ const TabuleiroModalModel = {
         inner join usuario_perfil up on u.username = up.usuario
         inner join sistema_permissao sp on sp.id_perfil = up.id_perfil
         inner join sistema s on s.id = sp.id_sistema
-        where u.id = $1 and (sp.id_sistema = 37 or sp.id_sistema = 38)
+        where u.id = $1 and (sp.id_sistema = 37 or sp.id_sistema = 38 )
     `, [idUser]);
 
         const permissao = Number(permissaoResult.rows[0].permissao);
@@ -137,6 +170,23 @@ const TabuleiroModalModel = {
             }
 
             return row;
+        }
+    },
+
+    tabuleiroSelecionadoParaCancelar: async (idTabuleiro, idUser) => {
+        const permissaoResult = await pool2.query(`        
+        select COUNT(s.nome) as permissao
+        from users u
+        inner join usuario_perfil up on u.username = up.usuario
+        inner join sistema_permissao sp on sp.id_perfil = up.id_perfil
+        inner join sistema s on s.id = sp.id_sistema
+        where u.id = $1 and sp.id_sistema = 41`, [idUser]);
+
+        const permissao = Number(permissaoResult.rows[0].permissao);
+
+        if (permissao > 0 ){
+            const result = await pool.query(`UPDATE tabuleiro.registro SET id_status = 7 WHERE id = $1 RETURNING id`, [idTabuleiro]);
+            return result.rows[0].id;
         }
     },
 

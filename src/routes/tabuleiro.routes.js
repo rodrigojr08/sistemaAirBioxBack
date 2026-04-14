@@ -14,6 +14,8 @@ router.get("/selecionar-tabuleiro-para-editar/:idTabuleiro", authenticateToken, 
 router.get("/buscar-todos-tabuleiros", authenticateToken, tabuleiroController.buscarTodosTabuleiros);
 router.get("/selecionar-tabuleiro/:idTabuleiro", authenticateToken, tabuleiroController.selecionarTabuleiro);
 router.get("/buscar-tabuleiro-para-conferencia", authenticateToken, tabuleiroController.buscarTodosTabuleirosFinalizados);
+router.get("/buscar-tabuleiros-para-cancelar", authenticateToken, tabuleiroController.buscarTabuleirosParaCancelar);
+router.put("/cancelar-tabuleiro", authenticateToken, tabuleiroController.tabuleiroSelecionadoParaCancelar);
 router.post("/inserir-retorno-carga", authenticateToken, tabuleiroController.inserirRetornoCarga);
 router.put("/salvar-alteracao-tabuleiro", authenticateToken, tabuleiroController.salvarAlteracaoTabuleiro);
 router.put("/salvar-conferencia-motorista", authenticateToken, tabuleiroController.salvarConferenciaMotorista);

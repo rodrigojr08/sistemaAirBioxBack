@@ -101,9 +101,11 @@ const MapaModel = {
     },
 
     buscarMapas: async () => {
-        const result = await pool.query(`SELECT id, data_criacao,  to_char(data::date, 'DD-MM-YYYY') AS data, cidade, dados, 
-            created_by, modified_by, atualizado_em, status, placa, motorista, quantidade_total  
-            From mapa.registro where status = 'editavel' or status = 'finalizado' order by data`);
+        
+        const result = await pool.query(`SELECT r.id, r.data_criacao, to_char(r.data::date, 'DD-MM-YYYY') AS data, r.cidade, r.dados, 
+            r.created_by, r.modified_by, r.atualizado_em, r.status, r.placa, r.motorista, r.quantidade_total 
+            From mapa.registro r inner join tabuleiro.registro tr on r.id = tr.id_mapa
+			where r.status = 'editavel' or r.status = 'finalizado' and tr.id_status = 1 order by data`);
         return result.rows;
     },
 

@@ -62,7 +62,6 @@ exports.buscarMapas = async (req, res) => {
     console.error("Erro ao buscar gases:", err);
     return res.status(500).json({ error: "Erro ao buscar gases" });
   }
-
 }
 
 exports.buscarMapa = async (req, res) => {

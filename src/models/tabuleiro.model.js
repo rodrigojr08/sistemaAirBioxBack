@@ -46,7 +46,7 @@ const TabuleiroModalModel = {
         }
     },
 
-        buscarTabuleirosParaCancelar: async (idUser) => {
+    buscarTabuleirosParaCancelar: async (idUser) => {
         const permissaoResult = await pool2.query(`
         select COUNT(s.nome) as permissao
         from users u
@@ -184,7 +184,7 @@ const TabuleiroModalModel = {
 
         const permissao = Number(permissaoResult.rows[0].permissao);
 
-        if (permissao > 0 ){
+        if (permissao > 0) {
             const result = await pool.query(`UPDATE tabuleiro.registro SET id_status = 7 WHERE id = $1 RETURNING id`, [idTabuleiro]);
             return result.rows[0].id;
         }
@@ -257,6 +257,7 @@ const TabuleiroModalModel = {
             let baseSql = `
     FROM tabuleiro.registro r
     INNER JOIN tabuleiro.status s ON s.id = r.id_status
+    LEFT JOIN tabuleiro.venda_json v ON r.id_venda_json = v.id
   `;
 
             const whereParts = [];
@@ -271,14 +272,15 @@ const TabuleiroModalModel = {
                 const term = `%${outros.trim()}%`;
                 params.push(term);
                 whereParts.push(`
-      (
-        r.cidade ILIKE $${params.length}
-        OR r.placa ILIKE $${params.length}
-        OR r.motorista ILIKE $${params.length}
-        OR s.descricao ILIKE $${params.length}
-        OR r.clientes::text ILIKE $${params.length}
-      )
-    `);
+                (
+                r.cidade ILIKE $${params.length}
+                OR r.placa ILIKE $${params.length}
+                OR r.motorista ILIKE $${params.length}
+                OR s.descricao ILIKE $${params.length}
+                OR r.clientes::text ILIKE $${params.length}
+                OR COALESCE(v.id_vendas::text, '') ILIKE $${params.length}
+                )
+            `);
             }
 
             const whereSql = whereParts.length ? ` WHERE ${whereParts.join(" AND ")}` : "";
@@ -308,7 +310,8 @@ const TabuleiroModalModel = {
       r.placa,
       r.motorista,
       s.descricao AS status,
-      r.clientes
+      r.clientes,
+      v.id_vendas AS id_vendas
     ${baseSql}
     ${whereSql}
     ORDER BY r.data DESC, r.id DESC
@@ -344,6 +347,7 @@ const TabuleiroModalModel = {
             let baseSql = `
         FROM tabuleiro.registro r
         INNER JOIN tabuleiro.status s ON s.id = r.id_status
+        LEFT JOIN tabuleiro.venda_json v ON r.id_venda_json = v.id
     `;
 
             const whereParts = [];
@@ -368,6 +372,7 @@ const TabuleiroModalModel = {
                 OR r.motorista ILIKE $${params.length}
                 OR s.descricao ILIKE $${params.length}
                 OR r.clientes::text ILIKE $${params.length}
+                OR COALESCE(v.id_vendas::text, '') ILIKE $${params.length}
             )
         `);
             }
@@ -390,19 +395,20 @@ const TabuleiroModalModel = {
             const offsetPos = params2.length;
 
             const dataSql = `
-        SELECT
-            r.id,
-            to_char(r.data::date, 'DD-MM-YYYY') AS data,
-            r.cidade,
-            r.placa,
-            r.motorista,
-            s.descricao AS status,
-            r.clientes
-        ${baseSql}
-        ${whereSql}
-        ORDER BY r.data DESC, r.id DESC
-        LIMIT $${limitPos} OFFSET $${offsetPos}
-    `;
+            SELECT
+                r.id,
+                to_char(r.data::date, 'DD-MM-YYYY') AS data,
+                r.cidade,
+                r.placa,
+                r.motorista,
+                s.descricao AS status,
+                r.clientes,
+                v.id_vendas AS id_vendas
+            ${baseSql}
+            ${whereSql}
+            ORDER BY r.data DESC, r.id DESC
+            LIMIT $${limitPos} OFFSET $${offsetPos}
+            `;
 
             const result = await pool.query(dataSql, params2);
 

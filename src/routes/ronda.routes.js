@@ -11,6 +11,4 @@ router.post("/jornada", authenticateDevice, rondaController.criarJornada);
 router.post("/jornada-slot", authenticateDevice, rondaController.salvarJornadaSlot);
 router.put("/jornada/:id/status", authenticateDevice, rondaController.atualizarStatusJornada);
 
-
-
 module.exports = router;

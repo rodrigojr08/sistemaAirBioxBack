@@ -21,6 +21,7 @@ const tabuleiroRoutes = require("./routes/tabuleiro.routes");
 const pontoRoutes = require("./routes/ponto.routes");
 const syncRoutes = require("./routes/sync.routes");
 const rondaRoutes = require("./routes/ronda.routes");
+const clienteRoutes = require("./routes/cliente.routes");
 const authenticateDevice = require("./middlewares/authenticateDevice");
 
 const app = express();
@@ -87,6 +88,7 @@ app.use("/motoristas", authenticateToken, motoristasRoutes);
 app.use("/tabuleiro", authenticateToken, tabuleiroRoutes);
 app.use("/ponto", authenticateDevice, pontoRoutes);
 app.use("/ronda", authenticateDevice, rondaRoutes);
+app.use("/cliente", authenticateToken, clienteRoutes);
 app.use("/sync", syncRoutes);
 
 // === TESTE DE TOKEN (opcional) ===

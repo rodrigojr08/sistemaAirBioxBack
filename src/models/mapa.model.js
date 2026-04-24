@@ -271,9 +271,9 @@ const MapaModel = {
 
             const sqlTabuleiro = `
       INSERT INTO tabuleiro.registro
-        (data, cidade, id_carga_json, created_by, placa, motorista, created_date, balcao, id_mapa, motorista_id)
+        (data, cidade, id_carga_json, created_by, placa, motorista, created_date, balcao, id_mapa, motorista_id, id_motorista_retorno, motorista_retorno)
       VALUES
-        ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW(), false, $7::integer, $8::integer)
+        ($1::date, $2::varchar, $3::integer, $4::varchar, $5::varchar, $6::varchar, NOW(), false, $7::integer, $8::integer, $8::integer, $6::varchar)
       RETURNING id;
     `;
             const insTab = await client.query(sqlTabuleiro, [

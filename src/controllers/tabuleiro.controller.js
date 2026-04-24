@@ -74,6 +74,28 @@ exports.buscarTabuleirosParaCancelar = async (req, res) => {
   }
 }
 
+exports.buscarTabuleirosParaCancelarConferenciaRetorno = async (req, res) => {
+  try {
+    const idUser = req.userId;
+    const result = await TabuleiroModal.buscarTabuleirosParaCancelarConferenciaRetorno(idUser);
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error("Erro ao buscar tabuleiros:", err);
+    return res.status(500).json({ error: "Erro ao buscar tabuleiros"});
+  }
+}
+
+exports.buscarTabuleiroParaTrocarMotoristaRetorno = async (req, res) => {
+  try{
+    const idUser = req.userId;
+    const result = await TabuleiroModal.buscarTabuleiroParaTrocarMotoristaRetorno(idUser);
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error("Erro ao buscar tabuleiro:", err);
+    return res.status(500).json({ error: "Erro ao buscar tabuleiro"});  
+  }
+}
+
 exports.tabuleiroSelecionadoParaCancelar = async (req, res) => {
   try{
     const { idTabuleiro } = req.body;
@@ -85,6 +107,32 @@ exports.tabuleiroSelecionadoParaCancelar = async (req, res) => {
     return res.status(500).json({error: "Erro ao selecionar tabuleiro"});
   }
 }
+
+exports.cancelarConferenciaRetorno = async (req, res) => {
+  try{
+    const { idTabuleiro } = req.body;
+    const idUser = req.userId;
+    const result = await TabuleiroModal.cancelarConferenciaRetorno(idTabuleiro, idUser);
+    return res.status(200).json(result);
+  }catch (err){
+    console.error("Erro ao cancelar conferência de retorno: ", err);
+    return res.status(500).json({error: "Erro ao cancelar conferência de retorno"});
+  }
+}
+
+exports.alterarMotoristaRetorno = async (req, res) => {
+  try{
+    const {idTabuleiro, nomeMotorista, idMotorista} = req.body;
+    const idUser = req.userId;
+    const result = await TabuleiroModal.alterarMotoristaRetorno(idTabuleiro, nomeMotorista, idMotorista, idUser);
+    return res.status(200).json(result);
+  }catch (err){
+    console.error("Erro ao alterar motorista de retorno: ", err);
+    return res.status(500).json({error: "Erro ao alterar motorista de retorno"});
+  }
+}
+
+
 
 exports.tabuleiroSelecionadoParaEditar = async (req, res) => {
   try{
@@ -210,29 +258,6 @@ exports.verificarSenhaAssinatura = async (req, res) => {
   } catch (e) {
     console.error("Erro verificarSenhaAssinatura:", e);
     return res.status(500).json(false);
-  }
-};
-
-exports.inserirTabuleiro = async (req, res) => {
-  try {
-    const { data, cidade, dados, placa, motorista, quantidade_total, balcao, venda_retorno } = req.body;
-
-    if (!data || !cidade || !dados || !placa || !motorista || !quantidade_total) {
-      return res.status(400).json({ error: "Parâmetros obrigatórios ausentes." });
-    }
-
-    const createdBy = req.userId;
-
-    const id = await TabuleiroModal.inserirTabuleiro(data, cidade, dados, createdBy, placa, motorista, quantidade_total, balcao, venda_retorno);
-
-    return res.status(200).json({
-      sucesso: true,
-      mensagem: "Tabuleiro inserido com sucesso!",
-      id
-    });
-  } catch (error) {
-    console.error("Erro ao inserir tabuleiro:", error);
-    return res.status(500).json({ error: error.message || "Erro interno ao inserir tabuleiro." });
   }
 };
 

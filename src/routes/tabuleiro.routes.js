@@ -15,7 +15,9 @@ router.get("/buscar-todos-tabuleiros", authenticateToken, tabuleiroController.bu
 router.get("/selecionar-tabuleiro/:idTabuleiro", authenticateToken, tabuleiroController.selecionarTabuleiro);
 router.get("/buscar-tabuleiro-para-conferencia", authenticateToken, tabuleiroController.buscarTodosTabuleirosFinalizados);
 router.get("/buscar-tabuleiros-para-cancelar", authenticateToken, tabuleiroController.buscarTabuleirosParaCancelar);
+router.get("/buscar-tabuleiros-para-cancelar-conferencia-retorno", authenticateToken, tabuleiroController.buscarTabuleirosParaCancelarConferenciaRetorno);
 router.put("/cancelar-tabuleiro", authenticateToken, tabuleiroController.tabuleiroSelecionadoParaCancelar);
+router.put("/cancelar-conferencia-retorno", authenticateToken, tabuleiroController.cancelarConferenciaRetorno);
 router.post("/inserir-retorno-carga", authenticateToken, tabuleiroController.inserirRetornoCarga);
 router.put("/salvar-alteracao-tabuleiro", authenticateToken, tabuleiroController.salvarAlteracaoTabuleiro);
 router.put("/salvar-conferencia-motorista", authenticateToken, tabuleiroController.salvarConferenciaMotorista);
@@ -28,8 +30,10 @@ router.get("/buscar-tabuleiro-conferente-retorno/:id", authenticateToken, tabule
 router.get("/buscar-tabuleiro-a-finalizar/:id", authenticateToken, tabuleiroController.buscarTabuleiroAFinalizar);
 router.get("/buscar-tabuleiro-finalizado-conferente/:id", authenticateToken, tabuleiroController.buscarTabuleiroFinalizadoConferente);
 router.get("/buscar-tabuleiros-finalizados-conferente", authenticateToken, tabuleiroController.buscarTabuleirosFinalizadosConferente);
+router.get("/buscar-tabuleiros-para-troca-motorista", authenticateToken, tabuleiroController.buscarTabuleiroParaTrocarMotoristaRetorno);
 router.put("/salvar-conferencia-saida-conferente", authenticateToken, tabuleiroController.salvarConferenciaSaidaConferente);
 router.put("/salvar-conferencia-retorno-conferente", authenticateToken, tabuleiroController.salvarConferenciaRetornoConferente);
+router.put("/alterar-motorista-retorno", authenticateToken, tabuleiroController.alterarMotoristaRetorno);
 router.post("/finalizar-tabuleiro", authenticateToken, tabuleiroController.finalizarTabuleiro);
 
 

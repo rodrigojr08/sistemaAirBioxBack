@@ -389,6 +389,7 @@ const TabuleiroModalModel = {
                 r.cidade ILIKE $${params.length}
                 OR r.placa ILIKE $${params.length}
                 OR r.motorista ILIKE $${params.length}
+                OR r.motorista_retorno ILIKE $${params.length}
                 OR s.descricao ILIKE $${params.length}
                 OR r.clientes::text ILIKE $${params.length}
                 OR COALESCE(v.id_vendas::text, '') ILIKE $${params.length}
@@ -422,6 +423,7 @@ const TabuleiroModalModel = {
       r.cidade,
       r.placa,
       r.motorista,
+      r.motorista_retorno,
       s.descricao AS status,
       r.clientes,
       v.id_vendas AS id_vendas
@@ -483,6 +485,7 @@ const TabuleiroModalModel = {
                 r.cidade ILIKE $${params.length}
                 OR r.placa ILIKE $${params.length}
                 OR r.motorista ILIKE $${params.length}
+                OR r.motorista_retorno ILIKE $${params.length}
                 OR s.descricao ILIKE $${params.length}
                 OR r.clientes::text ILIKE $${params.length}
                 OR COALESCE(v.id_vendas::text, '') ILIKE $${params.length}
@@ -514,6 +517,7 @@ const TabuleiroModalModel = {
                 r.cidade,
                 r.placa,
                 r.motorista,
+                r.motorista_retorno,
                 s.descricao AS status,
                 r.clientes,
                 v.id_vendas AS id_vendas

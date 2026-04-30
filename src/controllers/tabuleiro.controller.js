@@ -304,10 +304,10 @@ exports.salvarAlteracaoTabuleiro = async (req, res) => {
 exports.salvarConferenciaTabuleiro = async (req, res) => {
   try {
     const {id, dados, total_venda, total_carga, total_vazio_cheio, observacao, id_vendas} = req.body;
+    
 
-    if(!id || !dados || !total_venda || !total_carga || !total_vazio_cheio || !observacao || !id_vendas){
+    if(!id || !dados || total_venda === null || total_venda === undefined || total_carga === null || total_carga === undefined || total_vazio_cheio === null || total_vazio_cheio === undefined || !observacao){
       return res.status(400).json({error: "Parâmetros obrigatórios ausentes."});
-      
     }
     const userConferencia = req.userId;
     const retorno = await TabuleiroModal.salvarConferenciaTabuleiro(id, dados, total_venda, total_carga, total_vazio_cheio, observacao, id_vendas, userConferencia);
